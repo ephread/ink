@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
+using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
@@ -9,27 +10,32 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 namespace Ink.LanguageServerProtocol.Backend
 {
     // Compile or run static analysis, then push diagnostics back to the client.
-    public class CompilerManager: ICompilerManager
+    public class ProcessingManager: IProcessingManager
     {
-        private ILogger<CompilerManager> _logger;
+        private ILogger<ProcessingManager> _logger;
         private Ink.IFileHandler _fileHandler;
-        private ILanguageServer _server;
+        private ILanguageServerConnection _connection;
+        private IVirtualWorkspaceManager _workspace;
 
         private List<string> _errors = new List<string>();
         private List<string> _warnings = new List<string>();
         private List<string> _authorMessages = new List<string>();
 
-        public CompilerManager(
-            ILogger<CompilerManager> logger,
-            ILanguageServer server,
+        public ProcessingManager(
+            ILogger<ProcessingManager> logger,
+            ILanguageServerConnection connection,
+            IVirtualWorkspaceManager workspace,
             Ink.IFileHandler fileHandler)
         {
             _logger = logger;
+            _connection = connection;
+            _workspace = workspace;
             _fileHandler = fileHandler;
-            _server = server;
         }
 
-        // Compilation or analysis should probably be done in a task.
+        // Compilation or analysis should be done in cancellable tasks.
+
+        // Compile entire project.
         public void Compile()
         {
             var inputString = loadEntryPoint();
@@ -45,6 +51,12 @@ namespace Ink.LanguageServerProtocol.Backend
 
             ClearDiagnostics();
             PushDiagnostics();
+        }
+
+        // Parse file to get fast analysis. To be implemented.
+        public void Analyse(Uri uri)
+        {
+
         }
 
         private string loadEntryPoint() {

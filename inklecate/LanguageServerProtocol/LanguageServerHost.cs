@@ -19,6 +19,8 @@ namespace Ink.LanguageServerProtocol
     {
         private readonly LanguageServerOptions _options;
         private ILanguageServer _server;
+        private ILanguageServerConnection _connection;
+        private ILanguageServerEnvironment _environment;
 
         public LanguageServerHost(Stream input, Stream output)
         {
@@ -70,13 +72,21 @@ namespace Ink.LanguageServerProtocol
                 .OnInitialized(Initialized);
         }
 
+        // TODO: Wait for initialize event to register services and handlers.
         private void Services(IServiceCollection services)
         {
+            _connection = new LanguageServerConnection();
+            services.AddSingleton(provider => {
+                return _connection;
+            });
+
             services.AddSingleton<IVirtualWorkspaceManager>(provider => {
                 var loggerFactory = provider.GetService<ILoggerFactory>();
+                var connection = provider.GetService<ILanguageServerConnection>();
+
                 var logger = loggerFactory.CreateLogger<VirtualWorkspaceManager>();
 
-                return new VirtualWorkspaceManager(logger);
+                return new VirtualWorkspaceManager(logger, connection);
             });
         }
 
@@ -85,6 +95,8 @@ namespace Ink.LanguageServerProtocol
             InitializeParams initializeParams)
         {
             Log.Logger.Information("Received 'initialize'.");
+
+            _environment = new LanguageServerEnvironment(initializeParams);
 
             return Task.CompletedTask;
         }

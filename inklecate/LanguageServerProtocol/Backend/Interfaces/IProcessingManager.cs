@@ -1,6 +1,6 @@
 ﻿namespace Ink.LanguageServerProtocol.Backend.Interfaces
 {
-    public interface ICompilerManager
+    public interface IProcessingManager
     {
         public void Compile();
     }

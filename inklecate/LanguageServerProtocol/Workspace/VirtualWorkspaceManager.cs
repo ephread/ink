@@ -12,11 +12,15 @@ namespace Ink.LanguageServerProtocol.Workspace
     public class VirtualWorkspaceManager: IVirtualWorkspaceManager
     {
         private readonly ILogger<VirtualWorkspaceManager> _logger;
+        private readonly ILanguageServerConnection _connection;
         private readonly Dictionary<Uri, TextDocumentItem> _dictionary;
 
-        public VirtualWorkspaceManager(ILogger<VirtualWorkspaceManager> logger)
+        public VirtualWorkspaceManager(
+            ILogger<VirtualWorkspaceManager> logger,
+            ILanguageServerConnection connection)
         {
             _logger = logger;
+            _connection = connection;
             _dictionary = new Dictionary<Uri, TextDocumentItem>();
         }
 
@@ -47,6 +51,28 @@ namespace Ink.LanguageServerProtocol.Workspace
         {
             _dictionary.Remove(uri);
             _logger.LogDebug("[VIRTUAL WORKSPACE] Removed document at: " + uri);
+        }
+
+        public void LoadDocumentContent(Uri uri)
+        {
+            // Should throw an exception if Uri it outside of workspace.
+        }
+
+        // Fetch the entry point defined by the client for the scope URI.
+        public Uri GetMainDocument(Uri scopeUri)
+        {
+            // Grab the configuration, might need to be cached.
+            var configurationParams = new ConfigurationParams() {
+                Items = new Container<ConfigurationItem>(new ConfigurationItem() {
+                    ScopeUri = scopeUri,
+                    Section = "ink"
+                })
+            };
+
+            // var configuration = await server.Workspace.WorkspaceConfiguration(configurationParams)
+            // Inspect returned JToken and return URI.
+
+            return new Uri("");
         }
     }
 }

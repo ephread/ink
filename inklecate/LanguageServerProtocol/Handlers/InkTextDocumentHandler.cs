@@ -42,13 +42,15 @@ namespace Ink.LanguageServerProtocol.Handlers
             _logger.LogDebug("[HANDLER] Received 'textDocument/didChange' for: " + request.TextDocument.Uri);
 
             // Since synchronisation is requested as full text, it's assumed there
-            // will be only one change in the collection.
+            // will be only one change in the collection for now.
             var enumerator = request.ContentChanges.GetEnumerator();
             if (enumerator.MoveNext())
             {
                 var change = enumerator.Current;
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
+
+            // Then compile / perform analysis.
 
             return Unit.Task;
         }
