@@ -28,4 +28,20 @@
     <ProjectReference Include="..\ink-engine-runtime\ink-engine-runtime.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.14.2" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="LanguageServerProtocol\Backend\" />
+    <Folder Include="LanguageServerProtocol\Backend\Interfaces\" />
+    <Folder Include="LanguageServerProtocol\Workspace\" />
+    <Folder Include="LanguageServerProtocol\Workspace\Interfaces\" />
+    <Folder Include="LanguageServerProtocol\Handlers\" />
+    <Folder Include="LanguageServerProtocol\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="LanguageServerProtocol\README.md" />
+  </ItemGroup>
 </Project>

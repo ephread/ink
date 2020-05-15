@@ -2,7 +2,9 @@
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Collections.Generic;
+using Ink.LanguageServerProtocol;
 
 namespace Ink
 {
@@ -17,6 +19,7 @@ namespace Ink
             public string outputFile;
             public bool countAllVisits;
             public bool keepOpenAfterStoryFinish;
+            public bool launchLanguageServer;
 		}
 
 		public static int ExitCodeError = 1;
@@ -37,18 +40,29 @@ namespace Ink
                 "   -j:              Output in JSON format (for communication with tools like Inky)\n"+
                 "   -s:              Print stats about story including word count in JSON format\n" +
                 "   -v:              Verbose mode - print compilation timings\n"+
-                "   -k:              Keep inklecate running in play mode even after story is complete\n");
+                "   -k:              Keep inklecate running in play mode even after story is complete\n"+
+                "   -s:              Launch the language server (ignores other options).\n");
             Environment.Exit (ExitCodeError);
         }
 
 		CommandLineTool(string[] args)
 		{
-            // Set console's output encoding to UTF-8
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-
             if (ProcessArguments (args) == false) {
                 ExitWithUsageInstructions ();
             }
+
+            // If `-s` is present, all other options are ignored and
+            // the language server is started immediately.
+            if (opts.launchLanguageServer) {
+                StartLanguageServer();
+                return;
+            }
+
+            // Set console's output encoding to UTF-8
+            // Note that it's set here because ouputing a BOM messes up
+            // the communication between the Language Server and the
+            // Language Client.
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             if (opts.inputFile == null) {
                 ExitWithUsageInstructions ();
@@ -366,6 +380,9 @@ namespace Ink
                         case 'k':
                             opts.keepOpenAfterStoryFinish = true;
                             break;
+                        case 's':
+                            opts.launchLanguageServer = true;
+                            break;
                         default:
                             Console.WriteLine ("Unsupported argument type: '{0}'", argChar);
                             break;
@@ -383,6 +400,21 @@ namespace Ink
 
 			return true;
 		}
+
+        void StartLanguageServer()
+        {
+            // The Language Server uses standard console I/O to communicate
+            // with the client.
+            //
+            // Beware: using Console.WriteLine or Console.ReadLine is
+            // prohibited when running the language server. These calls
+            // break the streams and prevent the server from responsing
+            // to certain events correctly.
+            var server = new LanguageServerHost(
+                Console.OpenStandardInput(),
+                Console.OpenStandardOutput());
+            server.Start().Wait();
+        }
 
         Options opts;
         List<string> pluginNames;
