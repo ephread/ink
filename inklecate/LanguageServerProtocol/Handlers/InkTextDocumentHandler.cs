@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace Ink.LanguageServerProtocol.Handlers
     {
         private readonly ILogger<InkTextDocumentHandler> _logger;
         private readonly IVirtualWorkspaceManager _virtualWorkspace;
+        private readonly IDiagnosticManager _processor;
 
         private readonly DocumentSelector _documentSelector = new DocumentSelector(
             new DocumentFilter()
@@ -24,12 +26,14 @@ namespace Ink.LanguageServerProtocol.Handlers
             }
         );
 
-        public InkTextDocumentHandler(ILogger<InkTextDocumentHandler> logger, IVirtualWorkspaceManager workspace)
+        public InkTextDocumentHandler(
+            ILogger<InkTextDocumentHandler> logger,
+            IVirtualWorkspaceManager workspace,
+            IDiagnosticManager processor)
         {
             _logger = logger;
             _virtualWorkspace = workspace;
-
-            logger.LogDebug("[HANDLER] InkTextDocumentHandler is ready.");
+            _processor = processor;
         }
 
         public TextDocumentAttributes GetTextDocumentAttributes(Uri uri)
@@ -37,9 +41,9 @@ namespace Ink.LanguageServerProtocol.Handlers
             return new TextDocumentAttributes(uri, "ink");
         }
 
-        public Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug("[HANDLER] Received 'textDocument/didChange' for: " + request.TextDocument.Uri);
+            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didChange' for: '{request.TextDocument.Uri}'");
 
             // Since synchronisation is requested as full text, it's assumed there
             // will be only one change in the collection for now.
@@ -50,22 +54,26 @@ namespace Ink.LanguageServerProtocol.Handlers
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
 
-            // Then compile / perform analysis.
+            await _processor.Compile(request.TextDocument.Uri);
 
-            return Unit.Task;
+            return Unit.Value;
         }
 
-        public Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug("[HANDLER] Received 'textDocument/didOpen' for: " + request.TextDocument.Uri);
+            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didOpen' for: '{request.TextDocument.Uri}'");
+
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
-            return Unit.Task;
+            await _processor.Compile(request.TextDocument.Uri);
+
+            return Unit.Value;
         }
 
         public Task<Unit> Handle(DidCloseTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug("[HANDLER] Received 'textDocument/didClose' for: " + request.TextDocument.Uri);
+            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
+
             _virtualWorkspace.RemoveTextDocument(request.TextDocument.Uri);
 
             return Unit.Task;
@@ -73,7 +81,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
         public Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug("[HANDLER] Received 'textDocument/didSave' for: " + request.TextDocument.Uri);
+            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didSave' for: '{request.TextDocument.Uri}'");
 
             return Unit.Task;
         }

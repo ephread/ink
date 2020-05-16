@@ -12,6 +12,18 @@ A minimal implementation of the [Language Server Protocol (LSP)] for ink.
 - [ ] Go to definition
 - [ ] Refactoring?
 
+## To do
+- Investigate whether it's possible to unwrap exceptions from asynchronous calls.
+
 ## Contributing
-- Debugging the server
-- VS Code Language Extension Configuration
+
+### Logs
+The language server is quite chatty, logs are stored in the following directories:
+
+- **Windows:** `C:\Users\<UserName>\AppData\Roaming\inklecate\language_server.txt`
+- **Linux:** `/home/<UserName>/.config/inklecate/language_server.txt`
+- **macOS:** `/Users/<UserName>/.config/inklecate/language_server.txt`
+
+### How to
+- Debug the server
+- Run with the VS Code Language Extension Configuration

@@ -5,12 +5,12 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
 {
     public interface IVirtualWorkspaceManager
     {
-        public TextDocumentItem GetTextDocument(Uri uri);
-        public void UpdateContentOfTextDocument(Uri uri, String text);
-        public void SetTextDocument(Uri uri, TextDocumentItem document);
-        public void RemoveTextDocument(Uri uri);
+        TextDocumentItem GetTextDocument(Uri uri);
+        void UpdateContentOfTextDocument(Uri uri, String text);
+        void SetTextDocument(Uri uri, TextDocumentItem document);
+        void RemoveTextDocument(Uri uri);
 
-        public void LoadDocumentContent(Uri uri);
-        public Uri GetMainDocument(Uri scopeUri);
+        Uri GetUriFromAbsolutePath(string path);
+        Uri GetUriFromRelativePath(Uri rootUri, string path);
     }
 }

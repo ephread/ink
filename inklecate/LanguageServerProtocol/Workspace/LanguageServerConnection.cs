@@ -9,6 +9,10 @@ namespace Ink.LanguageServerProtocol.Workspace
     {
         private ILanguageServer _server;
 
+        public LanguageServerConnection() {
+
+        }
+
         public ILanguageServerDocument Document
         {
             get { return _server.Document; }
@@ -29,7 +33,8 @@ namespace Ink.LanguageServerProtocol.Workspace
             get { return _server.Workspace; }
         }
 
-        public void SetLanguageServer (ILanguageServer server) {
+        public void SetServer(ILanguageServer server)
+        {
             _server = server;
         }
     }

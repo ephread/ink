@@ -1,5 +1,8 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
+using Ink.LanguageServerProtocol.Backend;
+using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Handlers;
 using Ink.LanguageServerProtocol.Workspace;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
@@ -19,21 +22,32 @@ namespace Ink.LanguageServerProtocol
     {
         private readonly LanguageServerOptions _options;
         private ILanguageServer _server;
-        private ILanguageServerConnection _connection;
-        private ILanguageServerEnvironment _environment;
+        private LanguageServerConnection _connection;
+        private LanguageServerEnvironment _environment;
+
+        private IServiceCollection _services;
+
+/* ************************************************************************** */
 
         public LanguageServerHost(Stream input, Stream output)
         {
-            // Configure Serilog. With the current setup,
-            // Log.Logger calls will write to the disk.
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var logFile = Path.Combine(appData, "inklecate", "language_server.txt");
+
+            // Configure Serilog so that the logs will both can be written on
+            // the disk on top of being pushed to the client.
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
+                .MinimumLevel.Debug()
                 .WriteTo.File(
-                    "ink.language.server.log.txt",
+                    logFile,
                     rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
             Log.Logger.Information("Logger is ready.");
+
+            _connection = new LanguageServerConnection();
+            _environment = new LanguageServerEnvironment();
 
             // Configure the Language Server:
             //
@@ -43,8 +57,8 @@ namespace Ink.LanguageServerProtocol
             //
             //   - `ConfigureLogging`: Almost every object in the Language
             //     Server implementation will take a logger as dependency.
-            //     At this point, loggers are only used to report valuable
-            //     information to the client and don't write to the disk.
+            //     Loggers write on the disk (AddSerilog) and also push logs
+            //     to the client (AddLanguageServer).
             //
             //   - `WithHandler` is expecting a Handler, i. e. an object that
             //     respond to LSP commands (such as 'textDocument/didOpen').
@@ -54,10 +68,12 @@ namespace Ink.LanguageServerProtocol
             //     (see WithServices).
             //
             //   - `WithServices` is expecting an Action to provides dependency
-            //     injection services.
+            //     injection services. The host keep a refernce to the service
+            //     collection, so that new service can be registered after
+            //     the server was initialised.
             //
-            //   - `OnInitialize` & `OnInitialized` are expecting delegates;
-            //      the server will call them when receiving initialisation
+            //   - `OnInitialize` (& `OnInitialized`) is expecting a delegate
+            //      which will be called when receiving initialisation
             //      events.
             _options = new LanguageServerOptions()
                 .WithInput(input)
@@ -68,48 +84,10 @@ namespace Ink.LanguageServerProtocol
                     .SetMinimumLevel(LogLevel.Debug))
                 .WithHandler<InkTextDocumentHandler>()
                 .WithServices(Services)
-                .OnInitialize(Initialize)
-                .OnInitialized(Initialized);
+                .OnInitialize(Initialize);
         }
 
-        // TODO: Wait for initialize event to register services and handlers.
-        private void Services(IServiceCollection services)
-        {
-            _connection = new LanguageServerConnection();
-            services.AddSingleton(provider => {
-                return _connection;
-            });
-
-            services.AddSingleton<IVirtualWorkspaceManager>(provider => {
-                var loggerFactory = provider.GetService<ILoggerFactory>();
-                var connection = provider.GetService<ILanguageServerConnection>();
-
-                var logger = loggerFactory.CreateLogger<VirtualWorkspaceManager>();
-
-                return new VirtualWorkspaceManager(logger, connection);
-            });
-        }
-
-        private Task Initialize(
-            ILanguageServer server,
-            InitializeParams initializeParams)
-        {
-            Log.Logger.Information("Received 'initialize'.");
-
-            _environment = new LanguageServerEnvironment(initializeParams);
-
-            return Task.CompletedTask;
-        }
-
-        private Task Initialized(
-            ILanguageServer server,
-            InitializeParams initializedParams,
-            InitializeResult response)
-        {
-            Log.Logger.Information("Received 'initialized'.");
-
-            return Task.CompletedTask;
-        }
+/* ************************************************************************** */
 
         /// <summary>
         /// Create and start the Language Server asynchronously.
@@ -123,6 +101,63 @@ namespace Ink.LanguageServerProtocol
             Log.Logger.Information("Language Server is ready.");
 
             await _server.WaitForExit;
+        }
+
+/* ************************************************************************** */
+
+        private Task Initialize(
+            ILanguageServer server,
+            InitializeParams initializeParams)
+        {
+            Log.Logger.Debug("(HOST) Received 'initialize' event.");
+
+            _connection.SetServer(server);
+            _environment.SetEnvironment(initializeParams);
+
+            return Task.CompletedTask;
+        }
+
+        // Setting up Dependencies.
+        private void Services(IServiceCollection services)
+        {
+            services.AddSingleton<ILanguageServerConnection>(provider => {
+                return _connection;
+            });
+
+            services.AddSingleton<ILanguageServerEnvironment>(provider => {
+                return _environment;
+            });
+
+            services.AddSingleton<IVirtualWorkspaceManager>(provider => {
+                var connection = provider.GetService<ILanguageServerConnection>();
+                var environment = provider.GetService<ILanguageServerEnvironment>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger<VirtualWorkspaceManager>();
+
+                return new VirtualWorkspaceManager(logger, environment, connection);
+            });
+
+            services.AddTransient<IWorkspaceFileHandlerFactory>(provider => {
+                var connection = provider.GetService<ILanguageServerConnection>();
+                var environment = provider.GetService<ILanguageServerEnvironment>();
+                var workspace = provider.GetService<IVirtualWorkspaceManager>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                return new WorkspaceFileHandlerFactory(loggerFactory, environment, connection, workspace);
+            });
+
+            services.AddSingleton<IDiagnosticManager>(provider => {
+                var connection = provider.GetService<ILanguageServerConnection>();
+                var workspace = provider.GetService<IVirtualWorkspaceManager>();
+                var fileHandlerFactory = provider.GetService<IWorkspaceFileHandlerFactory>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger<DiagnosticManager>();
+
+                return new DiagnosticManager(logger, connection, workspace, fileHandlerFactory);
+            });
         }
     }
 }

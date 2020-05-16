@@ -1,10 +1,12 @@
 using System;
-using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using Ink.LanguageServerProtocol.Models;
 
+// Ensuring the thread safety of this singleton would be a good idea.
 namespace Ink.LanguageServerProtocol.Workspace.Interfaces
 {
     public interface ILanguageServerEnvironment
     {
         Uri RootUri { get; }
+        InkConfiguration Configuration { get; }
     }
 }

@@ -12,67 +12,90 @@ namespace Ink.LanguageServerProtocol.Workspace
     public class VirtualWorkspaceManager: IVirtualWorkspaceManager
     {
         private readonly ILogger<VirtualWorkspaceManager> _logger;
+        private readonly ILanguageServerEnvironment _environment;
         private readonly ILanguageServerConnection _connection;
+
         private readonly Dictionary<Uri, TextDocumentItem> _dictionary;
+
+/* ************************************************************************** */
 
         public VirtualWorkspaceManager(
             ILogger<VirtualWorkspaceManager> logger,
+            ILanguageServerEnvironment environment,
             ILanguageServerConnection connection)
         {
             _logger = logger;
+            _environment = environment;
             _connection = connection;
+
             _dictionary = new Dictionary<Uri, TextDocumentItem>();
         }
 
+/* ************************************************************************** */
+
         public TextDocumentItem GetTextDocument(Uri uri)
         {
-            _logger.LogDebug("[VIRTUAL WORKSPACE] Got document at: " + uri);
-            return _dictionary[uri];
+            _logger.LogDebug($"(WORKSPACE) Retrieving document at key: '{uri}'");
+
+            TextDocumentItem documentItem = null;
+            _dictionary.TryGetValue(uri, out documentItem);
+
+            return documentItem;
         }
 
         public void SetTextDocument(Uri uri, TextDocumentItem document)
         {
+            _logger.LogDebug($"(WORKSPACE) Setting document at key: '{uri}'");
             _dictionary[uri] = document;
-            _logger.LogDebug("[VIRTUAL WORKSPACE] Set document at: " + uri);
         }
 
         public void UpdateContentOfTextDocument(Uri uri, String text)
         {
-            var document = _dictionary[uri];
-            if (document != null)
+            TextDocumentItem documentItem = null;
+            _dictionary.TryGetValue(uri, out documentItem);
+
+            if (documentItem != null)
             {
-                document.Text = text;
+                _logger.LogDebug($"(WORKSPACE) Updating document at key: '{uri}'");
+                documentItem.Text = text;
             }
-            // else throw? create?
-            _logger.LogDebug("[VIRTUAL WORKSPACE] Updated document at: " + uri);
+            else
+            {
+                _logger.LogWarning($"(WORKSPACE) Can't update content of TextDocument, nothing found for key: '{uri}'");
+            }
         }
 
         public void RemoveTextDocument(Uri uri)
         {
+            _logger.LogDebug($"(WORKSPACE) Removing document at key: '{uri}'");
             _dictionary.Remove(uri);
-            _logger.LogDebug("[VIRTUAL WORKSPACE] Removed document at: " + uri);
         }
 
-        public void LoadDocumentContent(Uri uri)
+        public Uri GetUriFromAbsolutePath(string path)
         {
-            // Should throw an exception if Uri it outside of workspace.
+            // Restoring the scheme. It's probably unecessary since file://
+            // is appended by default, but it's better not to make assumptions
+            // about URIs set by the client.
+            // (Also, this URIs. needs to match the key in the virtual
+            // workspace storage.)
+
+            var fileUriBuilder = new UriBuilder(path);
+            fileUriBuilder.Scheme = _environment.RootUri.Scheme;
+            var uri = fileUriBuilder.Uri;
+
+            _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from absolute path: '{path}'");
+
+            return uri;
         }
 
-        // Fetch the entry point defined by the client for the scope URI.
-        public Uri GetMainDocument(Uri scopeUri)
+        public Uri GetUriFromRelativePath(Uri rootUri, string path)
         {
-            // Grab the configuration, might need to be cached.
-            var configurationParams = new ConfigurationParams() {
-                Items = new Container<ConfigurationItem>(new ConfigurationItem() {
-                    ScopeUri = scopeUri,
-                    Section = "ink"
-                })
-            };
+            Uri directory = new Uri(rootUri, ".");
+            var uri = new Uri(directory, path);
 
-            // var configuration = await server.Workspace.WorkspaceConfiguration(configurationParams)
-            // Inspect returned JToken and return URI.
+            _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from root Uri: '{rootUri}' and relative path: '{path}'");
 
-            return new Uri("");
+            return uri;
         }
     }
 }
