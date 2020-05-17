@@ -96,9 +96,9 @@ namespace Ink.LanguageServerProtocol
             }
 
             if (inkConfiguration.IsMainStoryDefined) {
-                _logger.LogInformation("(FILE HANDLER) `mainStoryPath` is not provided, using current file as main file.");
+                _logger.LogInformation($"(FILE HANDLER) `mainStoryPath` is set, using '{inkConfiguration.mainStoryPath}' as main file.");
             } else {
-                _logger.LogInformation($"(FILE HANDLER) `mainStoryPath` is provided, using '{inkConfiguration.mainStoryPath}' as main file.");
+                _logger.LogInformation("(FILE HANDLER) `mainStoryPath` is not set, using current file as main file.");
             }
 
             return RootInkFile;

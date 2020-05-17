@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
+using Ink.LanguageServerProtocol.Extensions;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
@@ -53,6 +54,7 @@ namespace Ink.LanguageServerProtocol.Backend
             var inputString = _currentFileHandler.LoadDocumentContent(mainDocumentUri);
 
             ClearErrors();
+
             var compiler = new Compiler(inputString, new Compiler.Options {
                 sourceFilename = mainDocumentUri.LocalPath,
                 pluginNames = new List<string>(),
@@ -61,10 +63,10 @@ namespace Ink.LanguageServerProtocol.Backend
                 fileHandler = _currentFileHandler
             });
 
-            _logger.LogDebug("(DIAGS) Compiling…");
-            compiler.Compile();
-
-            _logger.LogDebug("(DIAGS) Compilation completed.");
+            using (_logger.TimeDebug("Compilation"))
+            {
+                compiler.Compile();
+            }
             PushDiagnosticsToClient();
 
             _currentFileHandler = null;

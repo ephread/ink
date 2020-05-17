@@ -79,8 +79,12 @@ namespace Ink.LanguageServerProtocol.Workspace
             // (Also, this URIs. needs to match the key in the virtual
             // workspace storage.)
 
-            var fileUriBuilder = new UriBuilder(path);
-            fileUriBuilder.Scheme = _environment.RootUri.Scheme;
+            var fileUriBuilder = new UriBuilder
+            {
+                Scheme = _environment.RootUri.Scheme,
+                Path = path,
+                Host = ""
+            };
             var uri = fileUriBuilder.Uri;
 
             _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from absolute path: '{path}'");

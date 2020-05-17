@@ -25,8 +25,6 @@ namespace Ink.LanguageServerProtocol
         private LanguageServerConnection _connection;
         private LanguageServerEnvironment _environment;
 
-        private IServiceCollection _services;
-
 /* ************************************************************************** */
 
         public LanguageServerHost(Stream input, Stream output)

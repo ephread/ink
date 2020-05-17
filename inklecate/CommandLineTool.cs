@@ -413,6 +413,7 @@ namespace Ink
             var server = new LanguageServerHost(
                 Console.OpenStandardInput(),
                 Console.OpenStandardOutput());
+
             server.Start().Wait();
         }
 
