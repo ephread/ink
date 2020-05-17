@@ -5,13 +5,11 @@ namespace Ink.LanguageServerProtocol.Models
 {
     public class InkConfiguration
     {
-        public readonly string mainStoryPath = null;
-        public readonly string inklecatePath = "inklecate";
-        public readonly bool runThroughMono = false;
+        public readonly string mainFilePath = null;
 
         public bool IsMainStoryDefined
         {
-            get { return !String.IsNullOrWhiteSpace(mainStoryPath); }
+            get { return !String.IsNullOrWhiteSpace(mainFilePath); }
         }
 
         public InkConfiguration()
@@ -19,18 +17,25 @@ namespace Ink.LanguageServerProtocol.Models
 
         }
 
-        public InkConfiguration(string mainStoryPath, string inklecatePath, bool runThroughMono)
+        public InkConfiguration(string mainFilePath, string inklecatePath)
         {
-            this.mainStoryPath = mainStoryPath;
-            this.inklecatePath = inklecatePath;
-            this.runThroughMono = runThroughMono;
+            this.mainFilePath = mainFilePath;
         }
 
         public InkConfiguration(InkConfiguration defaultConfiguration, JToken jToken)
         {
-            mainStoryPath = jToken.Value<string>("mainStoryPath") ?? defaultConfiguration.mainStoryPath;
-            inklecatePath = jToken.Value<string>("inklecatePath") ?? defaultConfiguration.inklecatePath;
-            runThroughMono = jToken.Value<bool?>("runThroughMono") ?? defaultConfiguration.runThroughMono;
+            var jObject = jToken as JObject;
+            if (jObject != null)
+            {
+                if (jObject.TryGetValue("languageServer", out JToken configJToken))
+                {
+                    mainFilePath = configJToken.Value<string>("mainFilePath") ?? defaultConfiguration.mainFilePath;
+
+                    return;
+                }
+            }
+
+            mainFilePath = defaultConfiguration.mainFilePath;
         }
 
         public static InkConfiguration Default

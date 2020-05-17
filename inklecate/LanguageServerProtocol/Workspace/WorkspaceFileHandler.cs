@@ -29,7 +29,7 @@ namespace Ink.LanguageServerProtocol
                 // the root file.
                 if (inkConfiguration.IsMainStoryDefined)
                 {
-                    return new Uri(_environment.RootUri, inkConfiguration.mainStoryPath);
+                    return new Uri(_environment.RootUri, inkConfiguration.mainFilePath);
                 }
                 else // Otherwise, we treat the current file as the root file.
                 {
@@ -96,9 +96,9 @@ namespace Ink.LanguageServerProtocol
             }
 
             if (inkConfiguration.IsMainStoryDefined) {
-                _logger.LogInformation($"(FILE HANDLER) `mainStoryPath` is set, using '{inkConfiguration.mainStoryPath}' as main file.");
+                _logger.LogInformation($"(FILE HANDLER) `mainFilePath` is set, using '{inkConfiguration.mainFilePath}' as main file.");
             } else {
-                _logger.LogInformation("(FILE HANDLER) `mainStoryPath` is not set, using current file as main file.");
+                _logger.LogInformation("(FILE HANDLER) `mainFilePath` is not set, using current file as main file.");
             }
 
             return RootInkFile;
