@@ -10,7 +10,7 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
         void SetTextDocument(Uri uri, TextDocumentItem document);
         void RemoveTextDocument(Uri uri);
 
-        Uri GetUriFromAbsolutePath(string path);
-        Uri GetUriFromRelativePath(Uri rootUri, string path);
+        Uri ResolvePath(string path);
+        Uri ResolvePath(string path, Uri mainDirectoryUri);
     }
 }

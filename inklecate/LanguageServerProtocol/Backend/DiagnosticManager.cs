@@ -43,9 +43,9 @@ namespace Ink.LanguageServerProtocol.Backend
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task Compile(Uri scopeUri)
+        public async Task Compile(Uri documentUri)
         {
-            _currentFileHandler = _fileHandlerFactory.CreateFileHandler(scopeUri);
+            _currentFileHandler = _fileHandlerFactory.CreateFileHandler(documentUri);
 
             _logger.LogDebug("(DIAGS) Retrieving main document URI…");
             var mainDocumentUri = await _currentFileHandler.GetMainDocument();
@@ -90,7 +90,7 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 GroupCollection groups = match.Groups;
 
-                var fileUri = _workspace.GetUriFromAbsolutePath(groups[2].Value);
+                var fileUri = _currentFileHandler.ResolveInkFileUri(groups[2].Value);
                 if (!_errors.ContainsKey(fileUri))
                 {
                     _errors[fileUri] = new List<CompilationError>();

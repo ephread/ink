@@ -7,5 +7,6 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
     {
         string LoadDocumentContent(Uri uri);
         Task<Uri> GetMainDocument();
+        Uri ResolveInkFileUri(string includeName);
     }
 }

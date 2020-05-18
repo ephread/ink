@@ -18,23 +18,33 @@ namespace Ink.LanguageServerProtocol
         private readonly ILanguageServerConnection _connection;
         private readonly IVirtualWorkspaceManager _workspace;
 
-        private readonly Uri _scopeUri;
+        private readonly Uri _documentUri;
 
         private InkConfiguration inkConfiguration = InkConfiguration.Default;
 
-        private Uri RootInkFile
+        private Uri MainDocumentUri
         {
             get {
-                // If the client provided a main entry point, that file is
+                // If the client provided a main file, that file is
                 // the root file.
                 if (inkConfiguration.IsMainStoryDefined)
                 {
-                    return new Uri(_environment.RootUri, inkConfiguration.mainFilePath);
+                    return _workspace.ResolvePath(inkConfiguration.mainFilePath);
                 }
-                else // Otherwise, we treat the current file as the root file.
+                else // Otherwise, we treat the current file as the main file.
                 {
-                    return _scopeUri;
+                    return _documentUri;
                 }
+            }
+        }
+
+        private Uri RootUri
+        {
+            get {
+                // To resolve includes, we define the directory of MainFileUri
+                // as the RootUri. This remove the last portion of the URI
+                // to get the directory.
+                return new Uri(MainDocumentUri, ".");
             }
         }
 
@@ -45,14 +55,14 @@ namespace Ink.LanguageServerProtocol
             ILanguageServerEnvironment environment,
             ILanguageServerConnection connection,
             IVirtualWorkspaceManager workspace,
-            Uri scopeUri)
+            Uri documentUri)
         {
             _logger = logger;
             _environment = environment;
             _connection = connection;
             _workspace = workspace;
 
-            _scopeUri = scopeUri;
+            _documentUri = documentUri;
         }
 
 /* ************************************************************************** */
@@ -80,7 +90,7 @@ namespace Ink.LanguageServerProtocol
         {
             var configurationParams = new ConfigurationParams() {
                 Items = new Container<ConfigurationItem>(new ConfigurationItem() {
-                    ScopeUri = _scopeUri,
+                    ScopeUri = _documentUri,
                     Section = "ink"
                 })
             };
@@ -96,24 +106,38 @@ namespace Ink.LanguageServerProtocol
             }
 
             if (inkConfiguration.IsMainStoryDefined) {
-                _logger.LogInformation($"(FILE HANDLER) `mainFilePath` is set, using '{inkConfiguration.mainFilePath}' as main file.");
+                _logger.LogInformation($"(FILE HANDLER) `mainFilePath` is set, using '{MainDocumentUri}' as main file.");
             } else {
                 _logger.LogInformation("(FILE HANDLER) `mainFilePath` is not set, using current file as main file.");
             }
 
-            return RootInkFile;
+            return MainDocumentUri;
         }
 
-        public string ResolveInkFilename (string includeName) {
-            var resolvedPath = _workspace.GetUriFromRelativePath(RootInkFile, includeName).LocalPath;
+        public Uri ResolveInkFileUri(string includeName)
+        {
+            return _workspace.ResolvePath(ResolveInkFilename(includeName));
+        }
+
+        public string ResolveInkFilename (string includeName)
+        {
+            if (Path.IsPathRooted(includeName))
+            {
+                _logger.LogDebug($"(FILE HANDLER) Path is absolute, nothing to resolve. Returning: '{includeName}'");
+                return includeName;
+            }
+
+            var uri = _workspace.ResolvePath(includeName, RootUri);
+            var resolvedPath = uri.LocalPath;
 
             _logger.LogDebug($"(FILE HANDLER) Resolving '{includeName}' into '{resolvedPath}'");
 
             return resolvedPath;
         }
 
-        public string LoadInkFileContents (string fullFilename) {
-            var fileUri = _workspace.GetUriFromAbsolutePath(fullFilename);
+        public string LoadInkFileContents (string fullFilename)
+        {
+            var fileUri = _workspace.ResolvePath(fullFilename, RootUri);
 
             _logger.LogDebug($"(FILE HANDLER) Loading content of '{fullFilename}' using '{fileUri}'");
 

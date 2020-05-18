@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -71,33 +72,56 @@ namespace Ink.LanguageServerProtocol.Workspace
             _dictionary.Remove(uri);
         }
 
-        public Uri GetUriFromAbsolutePath(string path)
-        {
-            // Restoring the scheme. It's probably unecessary since file://
-            // is appended by default, but it's better not to make assumptions
-            // about URIs set by the client.
-            // (Also, this URIs. needs to match the key in the virtual
-            // workspace storage.)
-
-            var fileUriBuilder = new UriBuilder
-            {
-                Scheme = _environment.RootUri.Scheme,
-                Path = path,
-                Host = ""
-            };
-            var uri = fileUriBuilder.Uri;
-
-            _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from absolute path: '{path}'");
-
-            return uri;
+        public Uri ResolvePath(string path) {
+            return ResolvePath(path, null);
         }
 
-        public Uri GetUriFromRelativePath(Uri rootUri, string path)
+        public Uri ResolvePath(string path, Uri mainDirectoryUri)
         {
-            Uri directory = new Uri(rootUri, ".");
-            var uri = new Uri(directory, path);
+            Uri uri;
 
-            _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from root Uri: '{rootUri}' and relative path: '{path}'");
+            // Path is already absolute, so it just gets converted to a Uri.
+            if (Path.IsPathRooted(path))
+            {
+                var builder = new UriBuilder
+                {
+                    Fragment = null,
+                    Host = _environment.RootUri.Host,
+                    Port = _environment.RootUri.Port,
+                    Query = null,
+                    Scheme = _environment.RootUri.Scheme,
+                    Path = path,
+                };
+                uri = builder.Uri;
+
+                _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from absolute path: '{path}'");
+            }
+            else
+            {
+                // if mainFileUri was not provided, we're using
+                // _environment.RootUri which is always a directory.
+                Uri rootUri = mainDirectoryUri ?? _environment.RootUri;
+
+                // Concatenate the paths through Path.Combine()
+                // and rebuild the URI. This is necessary since rootUri
+                // won't always have a trailing slash.
+                // Concatenating two URIs through Uri's constructor strips
+                // the last part of the path if the first argument
+                // doesn't have a trailing slash.
+                var fullPath = Path.Combine(rootUri.LocalPath, path);
+                var builder = new UriBuilder
+                {
+                    Fragment = null,
+                    Host = _environment.RootUri.Host,
+                    Port = _environment.RootUri.Port,
+                    Query = null,
+                    Scheme = _environment.RootUri.Scheme,
+                    Path = fullPath,
+                };
+                uri = builder.Uri;
+
+                _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from directory Uri: '{rootUri}' and relative path: '{path}'");
+            }
 
             return uri;
         }
