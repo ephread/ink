@@ -19,7 +19,7 @@ A minimal implementation of the [Language Server Protocol (LSP)] for ink.
 The server uses standard I/O to communicate with language clients. To start the server from your language client, run:
 
 ```shell
-$ inklecate -s
+$ inklecate -l
 ```
 
 ### Writing a client

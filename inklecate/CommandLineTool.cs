@@ -41,7 +41,7 @@ namespace Ink
                 "   -s:              Print stats about story including word count in JSON format\n" +
                 "   -v:              Verbose mode - print compilation timings\n"+
                 "   -k:              Keep inklecate running in play mode even after story is complete\n"+
-                "   -s:              Launch the language server (ignores other options).\n");
+                "   -l:              Launch the language server (ignores other options).\n");
             Environment.Exit (ExitCodeError);
         }
 
@@ -380,7 +380,7 @@ namespace Ink
                         case 'k':
                             opts.keepOpenAfterStoryFinish = true;
                             break;
-                        case 's':
+                        case 'l':
                             opts.launchLanguageServer = true;
                             break;
                         default:
