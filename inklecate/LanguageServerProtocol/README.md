@@ -16,7 +16,7 @@ A minimal implementation of the [Language Server Protocol (LSP)] for ink.
 
 ## Getting started
 
-The server use standard I/O to communicate with language clients. To start the server from your language client, run:
+The server uses standard I/O to communicate with language clients. To start the server from your language client, run:
 
 ```shell
 $ inklecate -s
@@ -25,9 +25,9 @@ $ inklecate -s
 ### Writing a client
 
 #### Configuration Settings
-The server supports one configuration settings.
+The server supports one configuration setting.
 
-- `ink.languageServer.mainFilePath` is path to the main ink file, used by inklecate to build the story. If the setting is not provided, the current buffer sent by the client will be treated as the main file.
+- `ink.languageServer.mainFilePath` is the path to the main ink file, used by `inklecate` to build the story. If the setting is not provided, the current buffer sent by the client will be treated as the main file.
 
 ### Logs
 The language server is quite chatty, logs are stored in the following directories:
@@ -40,8 +40,9 @@ The language server is quite chatty, logs are stored in the following directorie
 
 To test the server, you can take advantage of the [Visual Studio Code extension](https://github.com/ephread/vscode-ink).
 
-Once an ink file is opened in VS Code, the extension will start the language server and a debugger can then be attached to the process.
+Once an ink file is opened in VS Code, the extension will start the language server and a debugger can then be attached to the `inklecate` process.
 
 ## To do
-- Support compilation cancellation (`CancellationToken`).
-- Offload the compilation to a background thread (will require some methods to be thread-safe).
+1. Allow cancelling the compilation (with a `CancellationToken`).
+2. Run the compilation in a background thread (will require some methods to be thread-safe).
+3. Support multi-root workspaces.
