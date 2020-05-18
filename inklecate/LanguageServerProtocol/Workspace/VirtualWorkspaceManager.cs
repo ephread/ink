@@ -36,7 +36,7 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public TextDocumentItem GetTextDocument(Uri uri)
         {
-            _logger.LogDebug($"(WORKSPACE) Retrieving document at key: '{uri}'");
+            _logger.LogDebug($"Retrieving document at key: '{uri}'");
 
             TextDocumentItem documentItem = null;
             _dictionary.TryGetValue(uri, out documentItem);
@@ -46,7 +46,7 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public void SetTextDocument(Uri uri, TextDocumentItem document)
         {
-            _logger.LogDebug($"(WORKSPACE) Setting document at key: '{uri}'");
+            _logger.LogDebug($"Setting document at key: '{uri}'");
             _dictionary[uri] = document;
         }
 
@@ -57,18 +57,18 @@ namespace Ink.LanguageServerProtocol.Workspace
 
             if (documentItem != null)
             {
-                _logger.LogDebug($"(WORKSPACE) Updating document at key: '{uri}'");
+                _logger.LogDebug($"Updating document at key: '{uri}'");
                 documentItem.Text = text;
             }
             else
             {
-                _logger.LogWarning($"(WORKSPACE) Can't update content of TextDocument, nothing found for key: '{uri}'");
+                _logger.LogWarning($"Can't update content of TextDocument, nothing found for key: '{uri}'");
             }
         }
 
         public void RemoveTextDocument(Uri uri)
         {
-            _logger.LogDebug($"(WORKSPACE) Removing document at key: '{uri}'");
+            _logger.LogDebug($"Removing document at key: '{uri}'");
             _dictionary.Remove(uri);
         }
 
@@ -94,7 +94,7 @@ namespace Ink.LanguageServerProtocol.Workspace
                 };
                 uri = builder.Uri;
 
-                _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from absolute path: '{path}'");
+                _logger.LogDebug($"Created Uri: '{uri}' from absolute path: '{path}'");
             }
             else
             {
@@ -120,7 +120,7 @@ namespace Ink.LanguageServerProtocol.Workspace
                 };
                 uri = builder.Uri;
 
-                _logger.LogDebug($"(WORKSPACE) Created Uri: '{uri}' from directory Uri: '{rootUri}' and relative path: '{path}'");
+                _logger.LogDebug($"Created Uri: '{uri}' from directory Uri: '{rootUri}' and relative path: '{path}'");
             }
 
             return uri;

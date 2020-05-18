@@ -107,7 +107,7 @@ namespace Ink.LanguageServerProtocol
             ILanguageServer server,
             InitializeParams initializeParams)
         {
-            Log.Logger.Debug("(HOST) Received 'initialize' event.");
+            Log.Logger.Debug("Received 'initialize' event.");
 
             _connection.SetServer(server);
             _environment.SetEnvironment(initializeParams);

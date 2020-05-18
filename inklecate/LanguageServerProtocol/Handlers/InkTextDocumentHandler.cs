@@ -43,7 +43,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
         public async Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didChange' for: '{request.TextDocument.Uri}'");
+            _logger.LogDebug($"Received 'textDocument/didChange' for: '{request.TextDocument.Uri}'");
 
             // Since synchronisation is requested as full text, it's assumed there
             // will be only one change in the collection for now.
@@ -61,7 +61,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
         public async Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didOpen' for: '{request.TextDocument.Uri}'");
+            _logger.LogDebug($"Received 'textDocument/didOpen' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
@@ -72,7 +72,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
         public Task<Unit> Handle(DidCloseTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
+            _logger.LogDebug($"Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.RemoveTextDocument(request.TextDocument.Uri);
 
@@ -81,7 +81,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
         public Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _logger.LogDebug($"(TEXT HANDLER) Received 'textDocument/didSave' for: '{request.TextDocument.Uri}'");
+            _logger.LogDebug($"Received 'textDocument/didSave' for: '{request.TextDocument.Uri}'");
 
             return Unit.Task;
         }

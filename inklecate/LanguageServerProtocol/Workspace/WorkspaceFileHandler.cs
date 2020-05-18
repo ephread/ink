@@ -74,12 +74,12 @@ namespace Ink.LanguageServerProtocol
             } else {
                 TextDocumentItem documentItem = _workspace.GetTextDocument(uri);
                 if (documentItem != null) {
-                    _logger.LogInformation($"(FILE HANDLER) Loading '{uri}' from memory.");
+                    _logger.LogInformation($"Loading '{uri}' from memory.");
                     return documentItem.Text;
                 } else {
-                    _logger.LogInformation($"(FILE HANDLER) Loading '{uri}' from disk.");
+                    _logger.LogInformation($"Loading '{uri}' from disk.");
                     var text = File.ReadAllText(uri.LocalPath);
-                    _logger.LogInformation($"(FILE HANDLER) Loaded.");
+                    _logger.LogInformation($"Loaded.");
                     return text;
                 }
             }
@@ -106,9 +106,9 @@ namespace Ink.LanguageServerProtocol
             }
 
             if (inkConfiguration.IsMainStoryDefined) {
-                _logger.LogInformation($"(FILE HANDLER) `mainFilePath` is set, using '{MainDocumentUri}' as main file.");
+                _logger.LogInformation($"`mainFilePath` is set, using '{MainDocumentUri}' as main file.");
             } else {
-                _logger.LogInformation("(FILE HANDLER) `mainFilePath` is not set, using current file as main file.");
+                _logger.LogInformation("`mainFilePath` is not set, using current file as main file.");
             }
 
             return MainDocumentUri;
@@ -123,14 +123,14 @@ namespace Ink.LanguageServerProtocol
         {
             if (Path.IsPathRooted(includeName))
             {
-                _logger.LogDebug($"(FILE HANDLER) Path is absolute, nothing to resolve. Returning: '{includeName}'");
+                _logger.LogDebug($"Path is absolute, nothing to resolve. Returning: '{includeName}'");
                 return includeName;
             }
 
             var uri = _workspace.ResolvePath(includeName, RootUri);
             var resolvedPath = uri.LocalPath;
 
-            _logger.LogDebug($"(FILE HANDLER) Resolving '{includeName}' into '{resolvedPath}'");
+            _logger.LogDebug($"Resolving '{includeName}' into '{resolvedPath}'");
 
             return resolvedPath;
         }
@@ -139,7 +139,7 @@ namespace Ink.LanguageServerProtocol
         {
             var fileUri = _workspace.ResolvePath(fullFilename, RootUri);
 
-            _logger.LogDebug($"(FILE HANDLER) Loading content of '{fullFilename}' using '{fileUri}'");
+            _logger.LogDebug($"Loading content of '{fullFilename}' using '{fileUri}'");
 
             return LoadDocumentContent(fileUri);
         }

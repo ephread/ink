@@ -47,11 +47,11 @@ namespace Ink.LanguageServerProtocol.Extensions
         public static IDisposable TimeTrace(this ILogger logger, string message, params object[] args)
         {
             var scope = logger.BeginScope(new { });
-            logger.LogTrace($"(TIME) Starting: {message}", args);
+            logger.LogTrace($"Starting: {message}", args);
             return new Disposable(scope, elapsed =>
             {
                 var a = args.Concat(new object[] { elapsed }).ToArray();
-                logger.LogTrace($"(TIME) Finished: {message} in {{ElapsedMilliseconds}}ms", a);
+                logger.LogTrace($"Finished: {message} in {{ElapsedMilliseconds}}ms", a);
             });
         }
 
@@ -65,11 +65,11 @@ namespace Ink.LanguageServerProtocol.Extensions
         public static IDisposable TimeDebug(this ILogger logger, string message, params object[] args)
         {
             var scope = logger.BeginScope(new { });
-            logger.LogDebug($"(TIME) Starting: {message}", args);
+            logger.LogDebug($"Starting: {message}", args);
             return new Disposable(scope, elapsed =>
             {
                 var a = args.Concat(new object[] { elapsed }).ToArray();
-                logger.LogDebug($"(TIME) Finished: {message} in {{ElapsedMilliseconds}}ms", a);
+                logger.LogDebug($"Finished: {message} in {{ElapsedMilliseconds}}ms", a);
             });
         }
 
@@ -83,11 +83,11 @@ namespace Ink.LanguageServerProtocol.Extensions
         public static IDisposable TimeInformation(this ILogger logger, string message, params object[] args)
         {
             var scope = logger.BeginScope(new { });
-            logger.LogInformation($"(TIME) Starting: {message}", args);
+            logger.LogInformation($"Starting: {message}", args);
             return new Disposable(scope, elapsed =>
             {
                 var a = args.Concat(new object[] { elapsed }).ToArray();
-                logger.LogInformation($"(TIME) Finished: {message} in {{ElapsedMilliseconds}}ms", a);
+                logger.LogInformation($"Finished: {message} in {{ElapsedMilliseconds}}ms", a);
             });
         }
     }

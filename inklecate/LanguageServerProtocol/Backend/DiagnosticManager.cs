@@ -47,10 +47,10 @@ namespace Ink.LanguageServerProtocol.Backend
         {
             _currentFileHandler = _fileHandlerFactory.CreateFileHandler(documentUri);
 
-            _logger.LogDebug("(DIAGS) Retrieving main document URI…");
+            _logger.LogDebug("Retrieving main document URI…");
             var mainDocumentUri = await _currentFileHandler.GetMainDocument();
 
-            _logger.LogDebug($"(DIAGS) Retrieved. Uri is: '{mainDocumentUri}'");
+            _logger.LogDebug($"Retrieved. Uri is: '{mainDocumentUri}'");
             var inputString = _currentFileHandler.LoadDocumentContent(mainDocumentUri);
 
             ClearErrors();
@@ -78,14 +78,14 @@ namespace Ink.LanguageServerProtocol.Backend
         {
             // Parsing the message for now, but an another handler
             // should probably be created.
-            _logger.LogDebug("(DIAGS) Compiler reported an error.");
+            _logger.LogDebug("Compiler reported an error.");
             var regex = new Regex(
                 @"^(ERROR|WARNING|RUNTIME ERROR|RUNTIME WARNING|TODO): (?:'([^']+)')? line (\d+): (.+)",
                 RegexOptions.Singleline);
 
             MatchCollection matches = regex.Matches(message);
 
-            _logger.LogDebug($"(DIAGS) Error parsed, found {matches.Count} match(es).");
+            _logger.LogDebug($"Error parsed, found {matches.Count} match(es).");
             foreach (Match match in matches)
             {
                 GroupCollection groups = match.Groups;
@@ -107,7 +107,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
         private void PushDiagnosticsToClient()
         {
-            _logger.LogDebug($"(DIAGS) Publishing {_errors.Count} file diagnostic(s) to client.");
+            _logger.LogDebug($"Publishing {_errors.Count} file diagnostic(s) to client.");
             foreach (var KeyValue in _errors)
             {
                 var diagnostics = KeyValue.Value.Select(error => {
@@ -121,11 +121,11 @@ namespace Ink.LanguageServerProtocol.Backend
 
                 if (diagnostics.Count > 0)
                 {
-                    _logger.LogDebug($"(DIAGS)     -> Found {diagnostics.Count} diagnostics for '{diagnosticParams.Uri}'");
+                    _logger.LogDebug($"    -> Found {diagnostics.Count} diagnostics for '{diagnosticParams.Uri}'");
                 }
                 else
                 {
-                    _logger.LogDebug($"(DIAGS)     -> Clearing diagnostics of '{diagnosticParams.Uri}'");
+                    _logger.LogDebug($"    -> Clearing diagnostics of '{diagnosticParams.Uri}'");
                 }
 
                 _connection.Document.PublishDiagnostics(diagnosticParams);
