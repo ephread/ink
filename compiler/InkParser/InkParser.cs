@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Ink
 {
 	public partial class InkParser : StringParser
 	{
-        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null) 
-            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler) 
+        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null)
+            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler)
         {  }
 
-        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) { 
+        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) {
             _filename = inkFilename;
 			RegisterExpressionOperators ();
             GenerateStatementLevelRules ();
@@ -35,8 +36,12 @@ namespace Ink
 		}
 
         // Main entry point
-        public Parsed.Story Parse()
+        public Parsed.Story Parse(CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (cancellationToken.IsCancellationRequested) {
+                return null;
+            }
+
             List<Parsed.Object> topLevelContent = StatementsAtLevel (StatementLevel.Top);
 
             // Note we used to return null if there were any errors, but this would mean
@@ -114,12 +119,12 @@ namespace Ink
                 }
             }
         }
-            
+
         protected bool parsingStringExpression
         {
             get {
                 return GetFlag ((uint)CustomFlags.ParsingString);
-            } 
+            }
             set {
                 SetFlag ((uint)CustomFlags.ParsingString, value);
             }

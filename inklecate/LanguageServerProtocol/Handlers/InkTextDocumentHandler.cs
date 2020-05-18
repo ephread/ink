@@ -54,7 +54,7 @@ namespace Ink.LanguageServerProtocol.Handlers
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _processor.Compile(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }
@@ -65,7 +65,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _processor.Compile(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }

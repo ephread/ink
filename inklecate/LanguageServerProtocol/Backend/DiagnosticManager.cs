@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
@@ -43,7 +44,7 @@ namespace Ink.LanguageServerProtocol.Backend
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task Compile(Uri documentUri)
+        public async Task Compile(Uri documentUri, CancellationToken cancellationToken)
         {
             _currentFileHandler = _fileHandlerFactory.CreateFileHandler(documentUri);
 
@@ -65,9 +66,9 @@ namespace Ink.LanguageServerProtocol.Backend
 
             using (_logger.TimeDebug("Compilation"))
             {
-                compiler.Compile();
+                compiler.Compile(cancellationToken);
             }
-            PushDiagnosticsToClient();
+            PushDiagnosticsToClient(cancellationToken);
 
             _currentFileHandler = null;
         }
@@ -105,8 +106,13 @@ namespace Ink.LanguageServerProtocol.Backend
             }
         }
 
-        private void PushDiagnosticsToClient()
+        private void PushDiagnosticsToClient(CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested) {
+                _logger.LogDebug($"Cancellation was requested, no diagnostics to push.");
+                return;
+            }
+
             _logger.LogDebug($"Publishing {_errors.Count} file diagnostic(s) to client.");
             foreach (var KeyValue in _errors)
             {

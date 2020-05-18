@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Ink;
 
 namespace Ink
@@ -47,16 +48,20 @@ namespace Ink
                 _pluginManager = new PluginManager (_options.pluginNames);
         }
 
-        public Parsed.Story Parse()
+        public Parsed.Story Parse(CancellationToken cancellationToken = default(CancellationToken))
         {
             _parser = new InkParser(_inputString, _options.sourceFilename, OnError, _options.fileHandler);
-            _parsedStory = _parser.Parse();
+            _parsedStory = _parser.Parse(cancellationToken);
             return _parsedStory;
         }
 
-        public Runtime.Story Compile ()
+        public Runtime.Story Compile (CancellationToken cancellationToken = default(CancellationToken))
         {
-            Parse();
+            Parse(cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested) {
+                return null;
+            }
 
             if( _pluginManager != null )
                 _pluginManager.PostParse(_parsedStory);
@@ -112,7 +117,7 @@ namespace Ink
                     result.output = "DebugSource: " + dm.ToString ();
                 else
                     result.output = "DebugSource: Unknown source";
-            } 
+            }
 
             // Request for runtime path lookup (to line number)
             else if (inputResult.debugPathLookup != null) {
