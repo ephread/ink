@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
+using Ink.LanguageServerProtocol.Helpers;
 
 namespace Ink.LanguageServerProtocol.Backend
 {
@@ -115,7 +116,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 }).ToList();
 
                 var diagnosticParams = new PublishDiagnosticsParams() {
-                    Uri = KeyValue.Key,
+                    Uri = UriHelper.toClientUri(KeyValue.Key),
                     Diagnostics = new Container<Diagnostic>(diagnostics)
                 };
 

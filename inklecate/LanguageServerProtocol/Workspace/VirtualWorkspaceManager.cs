@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Ink.LanguageServerProtocol.Helpers;
 
 namespace Ink.LanguageServerProtocol.Workspace
 {
@@ -36,6 +37,7 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public TextDocumentItem GetTextDocument(Uri uri)
         {
+            uri = UriHelper.fromClientUri(uri);
             _logger.LogDebug($"Retrieving document at key: '{uri}'");
 
             TextDocumentItem documentItem = null;
@@ -46,12 +48,16 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public void SetTextDocument(Uri uri, TextDocumentItem document)
         {
+            uri = UriHelper.fromClientUri(uri);
+
             _logger.LogDebug($"Setting document at key: '{uri}'");
             _dictionary[uri] = document;
         }
 
         public void UpdateContentOfTextDocument(Uri uri, String text)
         {
+            uri = UriHelper.fromClientUri(uri);
+
             TextDocumentItem documentItem = null;
             _dictionary.TryGetValue(uri, out documentItem);
 
@@ -68,6 +74,8 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public void RemoveTextDocument(Uri uri)
         {
+            uri = UriHelper.fromClientUri(uri);
+
             _logger.LogDebug($"Removing document at key: '{uri}'");
             _dictionary.Remove(uri);
         }

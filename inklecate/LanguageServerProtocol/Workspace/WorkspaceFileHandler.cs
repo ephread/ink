@@ -70,6 +70,7 @@ namespace Ink.LanguageServerProtocol
         public string LoadDocumentContent(Uri uri)
         {
             if (!_environment.RootUri.IsBaseOf(uri)) {
+                _logger.LogError($"Cqn't load document at uri '{uri}', since it is outside the root uri: '{_environment.RootUri}'");
                 throw new Exception("The specified document is outside of the current workspace.");
             } else {
                 TextDocumentItem documentItem = _workspace.GetTextDocument(uri);

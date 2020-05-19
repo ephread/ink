@@ -45,7 +45,6 @@
     <Folder Include="LanguageServerProtocol\Workspace\" />
     <Folder Include="LanguageServerProtocol\Workspace\Interfaces\" />
     <Folder Include="LanguageServerProtocol\Handlers\" />
-    <Folder Include="LanguageServerProtocol\" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="LanguageServerProtocol\README.md" />
