@@ -14,6 +14,10 @@ A minimal implementation of the [Language Server Protocol (LSP)] for ink.
 - [ ] Go to definition
 - [ ] Refactoring?
 
+## Limitations
+
+The Language Server only supports the `file://` scheme when exchanging URIs.
+
 ## Getting started
 
 The server uses standard I/O to communicate with language clients. To start the server from your language client, run:

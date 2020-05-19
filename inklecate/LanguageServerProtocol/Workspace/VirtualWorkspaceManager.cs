@@ -91,17 +91,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             // Path is already absolute, so it just gets converted to a Uri.
             if (Path.IsPathRooted(path))
             {
-                var builder = new UriBuilder
-                {
-                    Fragment = null,
-                    Host = _environment.RootUri.Host,
-                    Port = _environment.RootUri.Port,
-                    Query = null,
-                    Scheme = _environment.RootUri.Scheme,
-                    Path = path,
-                };
-                uri = builder.Uri;
-
+                uri = UriHelper.fromPath(path);
                 _logger.LogDebug($"Created Uri: '{uri}' from absolute path: '{path}'");
             }
             else
@@ -117,16 +107,7 @@ namespace Ink.LanguageServerProtocol.Workspace
                 // the last part of the path if the first argument
                 // doesn't have a trailing slash.
                 var fullPath = Path.Combine(rootUri.LocalPath, path);
-                var builder = new UriBuilder
-                {
-                    Fragment = null,
-                    Host = _environment.RootUri.Host,
-                    Port = _environment.RootUri.Port,
-                    Query = null,
-                    Scheme = _environment.RootUri.Scheme,
-                    Path = fullPath,
-                };
-                uri = builder.Uri;
+                uri = UriHelper.fromPath(fullPath);
 
                 _logger.LogDebug($"Created Uri: '{uri}' from directory Uri: '{rootUri}' and relative path: '{path}'");
             }
