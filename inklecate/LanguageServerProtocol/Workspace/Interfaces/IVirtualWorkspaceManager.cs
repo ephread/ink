@@ -5,6 +5,8 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
 {
     public interface IVirtualWorkspaceManager
     {
+        Uri Uri { get; }
+
         TextDocumentItem GetTextDocument(Uri uri);
         void UpdateContentOfTextDocument(Uri uri, String text);
         void SetTextDocument(Uri uri, TextDocumentItem document);

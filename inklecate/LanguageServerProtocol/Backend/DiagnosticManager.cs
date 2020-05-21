@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Ink.LanguageServerProtocol.Extensions;
+using Ink.LanguageServerProtocol.Models;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
@@ -66,9 +67,24 @@ namespace Ink.LanguageServerProtocol.Backend
 
             using (_logger.TimeDebug("Compilation"))
             {
-                compiler.Compile();
+                using (_logger.TimeDebug("Parsing"))
+                {
+                    compiler.Parse();
+                }
+
+                using (_logger.TimeDebug("Statistics Generation"))
+                {
+                    Stats stats = Stats.Generate(compiler.parsedStory);
+                    PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
+                }
+
+                using (_logger.TimeDebug("Code Generation"))
+                {
+                    compiler.Generate();
+                }
             }
-            PushDiagnosticsToClient();
+
+            PublishDiagnosticsToClient();
 
             _currentFileHandler = null;
         }
@@ -106,7 +122,7 @@ namespace Ink.LanguageServerProtocol.Backend
             }
         }
 
-        private void PushDiagnosticsToClient()
+        private void PublishDiagnosticsToClient()
         {
             _logger.LogDebug($"Publishing {_errors.Count} file diagnostic(s) to client.");
             foreach (var KeyValue in _errors)
@@ -131,6 +147,19 @@ namespace Ink.LanguageServerProtocol.Backend
 
                 _connection.Document.PublishDiagnostics(diagnosticParams);
             }
+        }
+
+        private void PublishStatisticsToClient(
+            Uri workspaceUri,
+            Uri mainDocumentUri,
+            Ink.Stats stats)
+        {
+            _logger.LogDebug("Publishing statistics to client");
+            _connection.Client.SendNotification("story/statistics", new StatisticsParams() {
+                WorkspaceUri = workspaceUri,
+                MainDocumentUri = mainDocumentUri,
+                Statistics = stats,
+            });
         }
 
         private Diagnostic DiagnosticFromCompilationError(CompilationError error)

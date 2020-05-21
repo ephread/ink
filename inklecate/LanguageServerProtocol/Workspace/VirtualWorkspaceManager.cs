@@ -19,6 +19,10 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         private readonly Dictionary<Uri, TextDocumentItem> _dictionary;
 
+        public Uri Uri {
+            get { return _environment.RootUri; }
+        }
+
 /* ************************************************************************** */
 
         public VirtualWorkspaceManager(
