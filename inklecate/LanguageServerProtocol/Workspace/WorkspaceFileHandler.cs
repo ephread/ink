@@ -9,14 +9,17 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Ink.LanguageServerProtocol
 {
-    // Will resolve file names and then ask the virtual workspace to
-    // either read files from the disk or return in-memory buffers.
+    /// <summary>
+    /// Will resolve file names and then ask the virtual workspace to
+    /// either read files from the disk or return in-memory buffers. This
+    /// class is not intended to be used across multiple thread
+    /// </summary>
     public class WorkspaceFileHandler: IWorkspaceFileHandler
     {
         private readonly ILogger<WorkspaceFileHandler> _logger;
         private readonly ILanguageServerEnvironment _environment;
         private readonly ILanguageServerConnection _connection;
-        private readonly IVirtualWorkspaceManager _workspace;
+        private readonly IReadOnlyVirtualWorkspaceManager _workspace;
 
         private readonly Uri _documentUri;
 
@@ -54,7 +57,7 @@ namespace Ink.LanguageServerProtocol
             ILogger<WorkspaceFileHandler> logger,
             ILanguageServerEnvironment environment,
             ILanguageServerConnection connection,
-            IVirtualWorkspaceManager workspace,
+            IReadOnlyVirtualWorkspaceManager workspace,
             Uri documentUri)
         {
             _logger = logger;

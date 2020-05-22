@@ -13,12 +13,22 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public LanguageServerEnvironment()
         {
-            Configuration = new InkConfiguration();
+
+        }
+
+        private LanguageServerEnvironment(LanguageServerEnvironment environment)
+        {
+            RootUri = environment.RootUri;
+            Configuration = environment.Configuration;
         }
 
         public void SetEnvironment(InitializeParams initializeParams)
         {
             RootUri = initializeParams.RootUri;
+        }
+
+        public ILanguageServerEnvironment Copy() {
+            return new LanguageServerEnvironment(this);
         }
     }
 }

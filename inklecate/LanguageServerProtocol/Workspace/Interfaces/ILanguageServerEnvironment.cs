@@ -7,6 +7,7 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
     public interface ILanguageServerEnvironment
     {
         Uri RootUri { get; }
-        InkConfiguration Configuration { get; }
+
+        ILanguageServerEnvironment Copy();
     }
 }

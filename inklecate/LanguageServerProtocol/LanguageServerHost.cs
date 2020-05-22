@@ -133,7 +133,7 @@ namespace Ink.LanguageServerProtocol
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger<VirtualWorkspaceManager>();
 
-                return new VirtualWorkspaceManager(logger, environment, connection);
+                return new VirtualWorkspaceManager(logger, environment);
             });
 
             services.AddTransient<IWorkspaceFileHandlerFactory>(provider => {
@@ -146,15 +146,22 @@ namespace Ink.LanguageServerProtocol
                 return new WorkspaceFileHandlerFactory(loggerFactory, environment, connection, workspace);
             });
 
-            services.AddSingleton<IDiagnosticManager>(provider => {
+            services.AddTransient<ICompilerHostFactory>(provider => {
                 var connection = provider.GetService<ILanguageServerConnection>();
-                var workspace = provider.GetService<IVirtualWorkspaceManager>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                return new CompilerHostFactory(loggerFactory, connection);
+            });
+
+            services.AddSingleton<IDiagnosticManager>(provider => {
                 var fileHandlerFactory = provider.GetService<IWorkspaceFileHandlerFactory>();
+                var compilerHostFactory = provider.GetService<ICompilerHostFactory>();
 
                 var loggerFactory = provider.GetService<ILoggerFactory>();
                 var logger = loggerFactory.CreateLogger<DiagnosticManager>();
 
-                return new DiagnosticManager(logger, connection, workspace, fileHandlerFactory);
+                return new DiagnosticManager(logger, fileHandlerFactory, compilerHostFactory);
             });
         }
     }

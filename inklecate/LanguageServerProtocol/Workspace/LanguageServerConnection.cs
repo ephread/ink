@@ -3,15 +3,16 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Ink.LanguageServerProtocol.Workspace
 {
-    // Wrap connection objects (Document, Workspace, Window and Client)
-    // into an injectable singleton.
+    /// <summary>
+    /// Wrap connection objects (`Document`, `Client`, `Window` and `Workspace`)
+    /// into an injectable singleton. All methods and properties on
+    /// connection obects are considered thread safe.
+    /// </summary>
     public class LanguageServerConnection: ILanguageServerConnection
     {
         private ILanguageServer _server;
 
-        public LanguageServerConnection() {
-
-        }
+        public LanguageServerConnection() { }
 
         public ILanguageServerDocument Document
         {

@@ -28,10 +28,10 @@ namespace Ink.LanguageServerProtocol
             var logger = _loggerFactory.CreateLogger<WorkspaceFileHandler>();
             return new WorkspaceFileHandler(
                 logger,
-                _environment,
+                _environment.Copy(),
                 _connection,
-                _workspace,
-                scopeUri);
+                _workspace.ReadOnlyCopy(),
+                new Uri(scopeUri.ToString()));
         }
     }
 }
