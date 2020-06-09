@@ -6,11 +6,11 @@ namespace Ink
 {
 	public partial class InkParser : StringParser
 	{
-        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null) 
-            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler) 
+        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null)
+            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler)
         {  }
 
-        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) { 
+        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) {
             _filename = inkFilename;
 			RegisterExpressionOperators ();
             GenerateStatementLevelRules ();
@@ -95,6 +95,8 @@ namespace Ink
                 var md = new Runtime.DebugMetadata ();
                 md.startLineNumber = stateAtStart.lineIndex + 1;
                 md.endLineNumber = stateAtEnd.lineIndex + 1;
+                md.startCharacterNumber = stateAtStart.characterInLineIndex + 1;
+                md.endCharacterNumber = stateAtEnd.characterInLineIndex + 1;
                 md.fileName = _filename;
                 parsedObj.debugMetadata = md;
                 return;
@@ -108,18 +110,20 @@ namespace Ink
                         var md = new Runtime.DebugMetadata ();
                         md.startLineNumber = stateAtStart.lineIndex + 1;
                         md.endLineNumber = stateAtEnd.lineIndex + 1;
+                        md.startCharacterNumber = stateAtStart.characterInLineIndex + 1;
+                        md.endCharacterNumber = stateAtEnd.characterInLineIndex + 1;
                         md.fileName = _filename;
                         parsedListObj.debugMetadata = md;
                     }
                 }
             }
         }
-            
+
         protected bool parsingStringExpression
         {
             get {
                 return GetFlag ((uint)CustomFlags.ParsingString);
-            } 
+            }
             set {
                 SetFlag ((uint)CustomFlags.ParsingString, value);
             }

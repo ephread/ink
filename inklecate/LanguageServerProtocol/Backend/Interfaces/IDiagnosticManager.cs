@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
 
+using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+
 namespace Ink.LanguageServerProtocol.Backend.Interfaces
 {
     public interface IDiagnosticManager
     {
-        public Task Compile(Uri scopeUri);
+        Task Compile(Uri scopeUri);
+        LocationOrLocationLinks GetDefinition(Position position, Uri File);
     }
 }

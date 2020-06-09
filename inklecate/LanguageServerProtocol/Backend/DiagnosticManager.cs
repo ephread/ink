@@ -26,6 +26,8 @@ namespace Ink.LanguageServerProtocol.Backend
         private Dictionary<Uri, List<CompilationError>> _errors;
         private IWorkspaceFileHandler _currentFileHandler;
 
+        private ISymbolStore _currentStore;
+
 /* ************************************************************************** */
 
         public DiagnosticManager(
@@ -72,11 +74,17 @@ namespace Ink.LanguageServerProtocol.Backend
                     compiler.Parse();
                 }
 
+                _currentStore = new SymbolStore();
+
                 using (_logger.TimeDebug("Statistics Generation"))
                 {
-                    Stats stats = Stats.Generate(compiler.parsedStory);
+                    Stats.Symbols symbols = Stats.Symbols.Generate(compiler.parsedStory);
+                    Stats stats = Stats.Generate(symbols);
+
                     PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
                 }
+
+                _currentStore.SetSyntaxTree(compiler.parsedStory);
 
                 using (_logger.TimeDebug("Code Generation"))
                 {
@@ -88,6 +96,40 @@ namespace Ink.LanguageServerProtocol.Backend
 
             _currentFileHandler = null;
         }
+
+        public LocationOrLocationLinks GetDefinition(Position position, Uri file) {
+            if (_currentStore == null)
+            {
+                return null;
+            }
+
+            var parsedObject = _currentStore.SymbolAt(position, file);
+
+            if (parsedObject == null)
+            {
+                return null;
+            }
+
+            //var divert = parsedObject as Parsed.Divert;
+            //if (divert)
+            //{
+            //    return new LocationOrLocationLinks(new Location()
+            //    {
+            //        Uri = file,
+            //        Range = new Range() {
+            //            Start = new Position() {
+            //                Line = parsedObject.debugMetadata.startLineNumber - 1
+            //            }
+            //            Stop = new Position() {
+
+            //            }
+            //        }
+            //    });
+            //}
+
+            return null;
+        }
+
 
 /* ************************************************************************** */
 

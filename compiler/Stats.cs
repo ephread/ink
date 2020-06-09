@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 
 namespace Ink {
     public struct Stats {
@@ -10,14 +11,12 @@ namespace Ink {
         public int gathers;
         public int diverts;
 
-        public static Stats Generate(Ink.Parsed.Story story) {
+        public static Stats Generate(Symbols symbols) {
             var stats = new Stats();
-
-            var allText = story.FindAll<Ink.Parsed.Text>();
 
             // Count all the words across all strings
             stats.words = 0;
-            foreach(var text in allText) {
+            foreach(var text in symbols.text) {
 
                 var wordsInThisStr = 0;
                 var wasWhiteSpace = true;
@@ -33,23 +32,19 @@ namespace Ink {
                 stats.words += wordsInThisStr;
             }
 
-            var knots = story.FindAll<Ink.Parsed.Knot>();
-            stats.knots = knots.Count;
+            stats.knots = symbols.knots.Count;
 
             stats.functions = 0;
-            foreach(var knot in knots)
+            foreach(var knot in symbols.knots)
                 if (knot.isFunction) stats.functions++;
 
-            var stitches = story.FindAll<Ink.Parsed.Stitch>();
-            stats.stitches = stitches.Count;
+            stats.stitches = symbols.stitches.Count;
 
-            var choices = story.FindAll<Ink.Parsed.Choice>();
-            stats.choices = choices.Count;
+            stats.choices = symbols.choices.Count;
 
             // Skip implicit gather that's generated at top of story
             // (we know which it is because it isn't assigned debug metadata)
-            var gathers = story.FindAll<Ink.Parsed.Gather>(g => g.debugMetadata != null);
-            stats.gathers = gathers.Count;
+            stats.gathers = symbols.gathers.Count;
 
             // May not be entirely what you expect.
             // Does it nevertheless have value?
@@ -59,10 +54,35 @@ namespace Ink {
             //  - Some implicitly generated weave diverts
             // But we subtract one for the implicit DONE
             // at the end of the main flow outside of knots.
-            var diverts = story.FindAll<Ink.Parsed.Divert>();
-            stats.diverts = diverts.Count - 1;
+            stats.diverts = symbols.diverts.Count - 1;
 
             return stats;
+        }
+
+        public static Stats Generate(Ink.Parsed.Story story) {
+            return Generate(Symbols.Generate(story));
+        }
+
+        public struct Symbols {
+            public List<Parsed.Text> text;
+            public List<Parsed.Knot> knots;
+            public List<Parsed.Stitch> stitches;
+            public List<Parsed.Choice> choices;
+            public List<Parsed.Gather> gathers;
+            public List<Parsed.Divert> diverts;
+
+            public static Symbols Generate(Ink.Parsed.Story story) {
+                var symbols = new Symbols();
+
+                symbols.text = story.FindAll<Ink.Parsed.Text>();
+                symbols.knots = story.FindAll<Ink.Parsed.Knot>();
+                symbols.stitches = story.FindAll<Ink.Parsed.Stitch>();
+                symbols.choices = story.FindAll<Ink.Parsed.Choice>();
+                symbols.gathers = story.FindAll<Ink.Parsed.Gather>(g => g.debugMetadata != null);
+                symbols.diverts = story.FindAll<Ink.Parsed.Divert>();
+
+                return symbols;
+            }
         }
     }
 }
