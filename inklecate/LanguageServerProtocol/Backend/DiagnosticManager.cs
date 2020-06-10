@@ -74,7 +74,7 @@ namespace Ink.LanguageServerProtocol.Backend
                     compiler.Parse();
                 }
 
-                _currentStore = new SymbolStore();
+                _currentStore = new SymbolStore(_currentFileHandler);
 
                 using (_logger.TimeDebug("Statistics Generation"))
                 {
@@ -93,11 +93,9 @@ namespace Ink.LanguageServerProtocol.Backend
             }
 
             PublishDiagnosticsToClient();
-
-            _currentFileHandler = null;
         }
 
-        public LocationOrLocationLinks GetDefinition(Position position, Uri file) {
+        public async Task<LocationOrLocationLinks> GetDefinition(Position position, Uri file) {
             if (_currentStore == null)
             {
                 return null;
@@ -110,26 +108,63 @@ namespace Ink.LanguageServerProtocol.Backend
                 return null;
             }
 
-            //var divert = parsedObject as Parsed.Divert;
-            //if (divert)
-            //{
-            //    return new LocationOrLocationLinks(new Location()
-            //    {
-            //        Uri = file,
-            //        Range = new Range() {
-            //            Start = new Position() {
-            //                Line = parsedObject.debugMetadata.startLineNumber - 1
-            //            }
-            //            Stop = new Position() {
+            var divert = parsedObject as Parsed.Divert;
+            if (divert != null && divert.targetContent?.debugMetadata?.fileName != null)
+            {
+                var components = divert.target.identifiableComponents;
+                for (int i = 0; i < components.Count; i++)
+                {
+                    var identifier = components[i];
+                    if (isPositionWithinIdentifier(position, identifier))
+                    {
+                        if (i == components.Count) {
+                            var targetFile = _currentFileHandler.ResolveInkFileUri(divert.targetContent.debugMetadata.fileName);
+                            return LocationFromMetadata(divert.targetContent.debugMetadata, targetFile);
+                        } else {
+                            var partialComponents = components.Take(i + 1).ToList();
+                            var newTarget = new Ink.Parsed.Path(partialComponents);
+                            var targetContent = newTarget.ResolveFromContext(divert);
 
-            //            }
-            //        }
-            //    });
-            //}
+                            if (targetContent?.debugMetadata?.fileName != null) {
+                                var targetFile = _currentFileHandler.ResolveInkFileUri(targetContent.debugMetadata.fileName);
+                                return LocationFromMetadata(targetContent.debugMetadata, targetFile);
+                            }
+                        }
+                    }
+                }
+
+                return null;
+            }
 
             return null;
         }
 
+        private bool isPositionWithinIdentifier(Position position, Ink.Parsed.Identifier identifier)
+        {
+            if (identifier == null || identifier.debugMetadata == null)
+            {
+                return false;
+            }
+
+            return SymbolStore.isPositionWithinDebugMetadata(position, identifier.debugMetadata);
+        }
+
+        private LocationOrLocationLinks LocationFromMetadata(Ink.Runtime.DebugMetadata metadata, Uri file) {
+            return new LocationOrLocationLinks(new Location()
+            {
+                Uri = file,
+                Range = new Range() {
+                    Start = new Position() {
+                        Line = metadata.startLineNumber - 1,
+                        Character = metadata.startCharacterNumber - 1
+                    },
+                    End = new Position() {
+                        Line = metadata.endLineNumber - 1,
+                        Character = metadata.endCharacterNumber - 1
+                    }
+                }
+            });
+        }
 
 /* ************************************************************************** */
 

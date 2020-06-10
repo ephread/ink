@@ -18,17 +18,27 @@ namespace Ink.LanguageServerProtocol.Handlers
 {
     public class InkDefinitionHandler : DefinitionHandler
     {
-        private readonly TextDocumentRegistrationOptions _options;
-        private readonly IDiagnosticManager _processor;
+        private readonly IDiagnosticManager _diagnosticManager;
 
-        public InkDefinitionHandler(TextDocumentRegistrationOptions registrationOptions): base(registrationOptions)
+        private static readonly DocumentSelector _documentSelector = new DocumentSelector(
+            new DocumentFilter()
+            {
+                Pattern = "**/*.ink"
+            }
+        );
+
+        public InkDefinitionHandler(IDiagnosticManager diagnosticManager)
+            : base(new TextDocumentRegistrationOptions()
+            {
+                DocumentSelector = _documentSelector
+            })
         {
-
+            _diagnosticManager = diagnosticManager;
         }
 
         public async override Task<LocationOrLocationLinks> Handle(DefinitionParams request, CancellationToken cancellationToken)
         {
-            return null;
+            return await _diagnosticManager.GetDefinition(request.Position, request.TextDocument.Uri);
         }
 
         public override void SetCapability(DefinitionCapability capability)

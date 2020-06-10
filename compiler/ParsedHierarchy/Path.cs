@@ -42,29 +42,31 @@ namespace Ink.Parsed
             }
         }
 
+        public List<Identifier> identifiableComponents { get; }
+
         List<string> _components {
             get {
-                 return _identifiableComponents.Select(id => id?.name).ToList();
+                 return identifiableComponents.Select(id => id?.name).ToList();
             }
         }
 
         public Path(FlowLevel baseFlowLevel, List<Identifier> components)
         {
             _baseTargetLevel = baseFlowLevel;
-            _identifiableComponents = components;
+            identifiableComponents = components;
         }
 
         public Path(List<Identifier> components)
         {
             _baseTargetLevel = null;
-            _identifiableComponents = components;
+            identifiableComponents = components;
         }
 
         public Path(Identifier ambiguousName)
         {
             _baseTargetLevel = null;
-            _identifiableComponents = new List<Identifier> ();
-            _identifiableComponents.Add (ambiguousName);
+            identifiableComponents = new List<Identifier> ();
+            identifiableComponents.Add (ambiguousName);
         }
 
 		public override string ToString ()
@@ -186,7 +188,6 @@ namespace Ink.Parsed
         }
 
         FlowLevel? _baseTargetLevel;
-        List<Identifier> _identifiableComponents;
 	}
 }
 

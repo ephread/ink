@@ -15,6 +15,11 @@ namespace Ink.LanguageServerProtocol.Backend
         private Ink.Stats.Symbols _symbols;
         private IWorkspaceFileHandler _fileHandler;
 
+        public SymbolStore(IWorkspaceFileHandler fileHandler)
+        {
+            _fileHandler = fileHandler;
+        }
+
         public Ink.Parsed.Object SymbolAt(Position position, Uri file)
         {
             return SymbolAt(position, file, _rootObject);
@@ -30,24 +35,62 @@ namespace Ink.LanguageServerProtocol.Backend
             _symbols = symbols;
         }
 
+        public static bool isPositionWithinDebugMetadata(Position position, Ink.Runtime.DebugMetadata metadata)
+        {
+            if (position.Line > (metadata.startLineNumber - 1) &&
+                position.Line < (metadata.endLineNumber - 1))
+            {
+                return true;
+            }
+
+            if (position.Line == (metadata.startLineNumber - 1) &&
+                position.Line == (metadata.endLineNumber - 1))
+            {
+                return position.Character >= (metadata.startCharacterNumber - 1) &&
+                       position.Character <= (metadata.endCharacterNumber - 1);
+            }
+
+            if (position.Line >= (metadata.startLineNumber - 1) &&
+                position.Line < (metadata.endLineNumber - 1))
+            {
+                return position.Character >= (metadata.startCharacterNumber - 1);
+            }
+
+            if (position.Line > (metadata.startLineNumber - 1) &&
+                position.Line <= (metadata.endLineNumber - 1))
+            {
+                return position.Character <= (metadata.endCharacterNumber - 1);
+            }
+
+            return false;
+        }
+
         // Should be O(log n)
         private Ink.Parsed.Object SymbolAt(Position position, Uri file, Ink.Parsed.Object @object)
         {
-            if (@object.content.Count == 0) {
+            if (@object.content == null || @object.content.Count == 0)
+            {
                 // Current object is a leaf, does it contain the position?
-                if (isObjectMatchingPositionAndFile(@object, position, file)) {
+                if (isObjectMatchingPositionAndFile(@object, position, file))
+                {
                     return @object;
-                } else {
+                }
+                else
+                {
                     return null;
                 }
             }
 
             // Not a leaf, checking children.
             foreach (var subObject in @object.content) {
-                if (isObjectMatchingPositionAndFile(@object, position, file)) {
+                bool shouldDrillFurther = isWeaveOrHasNoMetadata(subObject) ||
+                                          isObjectMatchingPositionAndFile(subObject, position, file);
+                if (shouldDrillFurther)
+                {
                     var result = SymbolAt(position, file, subObject);
 
-                    if (result) {
+                    if (result)
+                    {
                         return result;
                     }
                 }
@@ -61,16 +104,23 @@ namespace Ink.LanguageServerProtocol.Backend
             Position position,
             Uri file)
         {
+            if (@object?.debugMetadata == null)
+            {
+                return false;
+            }
+
             return isPositionWithinObject(position, @object) &&
                    isObjectInFile(@object, file);
         }
 
         private bool isPositionWithinObject(Position position, Ink.Parsed.Object @object)
         {
-            return position.Line >= @object.debugMetadata.startLineNumber &&
-                   position.Line <= @object.debugMetadata.endLineNumber &&
-                   position.Character >= @object.debugMetadata.startCharacterNumber &&
-                   position.Character <= @object.debugMetadata.endCharacterNumber;
+            if (@object?.debugMetadata == null)
+            {
+                return false;
+            }
+
+            return isPositionWithinDebugMetadata(position, @object.debugMetadata);
         }
 
         private bool isObjectInFile(Ink.Parsed.Object @object, Uri file)
@@ -78,6 +128,11 @@ namespace Ink.LanguageServerProtocol.Backend
             var fileName = @object.debugMetadata.fileName;
 
             return _fileHandler.ResolveInkFilename(fileName) == file.LocalPath;
+        }
+
+        private bool isWeaveOrHasNoMetadata(Ink.Parsed.Object @object)
+        {
+            return @object is Ink.Parsed.Weave || @object.debugMetadata == null;
         }
     }
 }
