@@ -10,7 +10,7 @@ namespace Ink.Parsed
         public bool isChoiceCount { get { return name == "CHOICE_COUNT"; } }
         public bool isTurns { get { return name == "TURNS"; } }
         public bool isTurnsSince { get { return name == "TURNS_SINCE"; } }
-        public bool isRandom { get { return name == "RANDOM"; } } 
+        public bool isRandom { get { return name == "RANDOM"; } }
         public bool isSeedRandom { get { return name == "SEED_RANDOM"; } }
         public bool isListRange { get { return name == "LIST_RANGE"; } }
         public bool isListRandom { get { return name == "LIST_RANDOM"; } }
@@ -18,7 +18,7 @@ namespace Ink.Parsed
 
         public bool shouldPopReturnedValue;
 
-        public FunctionCall (string functionName, List<Expression> arguments)
+        public FunctionCall (Identifier functionName, List<Expression> arguments)
         {
             _proxyDivert = new Parsed.Divert(new Path(functionName), arguments);
             _proxyDivert.isFunctionCall = true;
@@ -38,13 +38,13 @@ namespace Ink.Parsed
 
                 container.AddContent (Runtime.ControlCommand.ChoiceCount ());
 
-            } else if (isTurns) { 
+            } else if (isTurns) {
 
                 if (arguments.Count > 0)
                     Error ("The TURNS() function shouldn't take any arguments");
 
                 container.AddContent (Runtime.ControlCommand.Turns ());
-                
+
             } else if (isTurnsSince || isReadCount) {
 
                 var divertTarget = arguments [0] as DivertTarget;
@@ -176,7 +176,7 @@ namespace Ink.Parsed
         {
             base.ResolveReferences (context);
 
-            // If we aren't using the proxy divert after all (e.g. if 
+            // If we aren't using the proxy divert after all (e.g. if
             // it's a native function call), but we still have arguments,
             // we need to make sure they get resolved since the proxy divert
             // is no longer in the content array.
@@ -212,16 +212,16 @@ namespace Ink.Parsed
             }
         }
 
-        public static bool IsBuiltIn(string name) 
+        public static bool IsBuiltIn(string name)
         {
             if (Runtime.NativeFunctionCall.CallExistsWithName (name))
                 return true;
-            
-            return name == "CHOICE_COUNT" 
-                || name == "TURNS_SINCE" 
+
+            return name == "CHOICE_COUNT"
+                || name == "TURNS_SINCE"
                 || name == "TURNS"
-                || name == "RANDOM" 
-                || name == "SEED_RANDOM" 
+                || name == "RANDOM"
+                || name == "SEED_RANDOM"
                 || name == "LIST_VALUE"
                 || name == "LIST_RANDOM"
                 || name == "READ_COUNT";
@@ -232,7 +232,7 @@ namespace Ink.Parsed
             var strArgs = string.Join (", ", arguments.ToStringsArray());
             return string.Format ("{0}({1})", name, strArgs);
         }
-            
+
         Parsed.Divert _proxyDivert;
         Parsed.DivertTarget _divertTargetToCount;
         Parsed.VariableReference _variableReferenceToCount;
