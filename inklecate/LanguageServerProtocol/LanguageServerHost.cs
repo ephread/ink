@@ -127,6 +127,12 @@ namespace Ink.LanguageServerProtocol
                 return _environment;
             });
 
+            RegisterFactories(services);
+            RegisterManagers(services);
+        }
+
+        private void RegisterManagers(IServiceCollection services)
+        {
             services.AddSingleton<IVirtualWorkspaceManager>(provider => {
                 var connection = provider.GetService<ILanguageServerConnection>();
                 var environment = provider.GetService<ILanguageServerEnvironment>();
@@ -137,6 +143,27 @@ namespace Ink.LanguageServerProtocol
                 return new VirtualWorkspaceManager(logger, environment, connection);
             });
 
+            services.AddSingleton<IDiagnosticManager>(provider => {
+                var diagnosticianFactory = provider.GetService<IDiagnosticianFactory>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger<DiagnosticManager>();
+
+                return new DiagnosticManager(logger, diagnosticianFactory);
+            });
+
+            services.AddSingleton<IDefinitionManager>(provider => {
+                var definitionFinderFactory = provider.GetService<IDefinitionFinderFactory>();
+
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+                var logger = loggerFactory.CreateLogger<DefinitionManager>();
+
+                return new DefinitionManager(logger, definitionFinderFactory);
+            });
+        }
+
+        private void RegisterFactories(IServiceCollection services)
+        {
             services.AddTransient<IWorkspaceFileHandlerFactory>(provider => {
                 var connection = provider.GetService<ILanguageServerConnection>();
                 var environment = provider.GetService<ILanguageServerEnvironment>();
@@ -147,16 +174,26 @@ namespace Ink.LanguageServerProtocol
                 return new WorkspaceFileHandlerFactory(loggerFactory, environment, connection, workspace);
             });
 
-            services.AddSingleton<IDiagnosticManager>(provider => {
+            services.AddTransient<IDiagnosticianFactory>(provider => {
                 var connection = provider.GetService<ILanguageServerConnection>();
+                var environment = provider.GetService<ILanguageServerEnvironment>();
                 var workspace = provider.GetService<IVirtualWorkspaceManager>();
+
                 var fileHandlerFactory = provider.GetService<IWorkspaceFileHandlerFactory>();
-
                 var loggerFactory = provider.GetService<ILoggerFactory>();
-                var logger = loggerFactory.CreateLogger<DiagnosticManager>();
 
-                return new DiagnosticManager(logger, connection, workspace, fileHandlerFactory);
+                return new DiagnosticianFactory(loggerFactory, fileHandlerFactory, environment, connection, workspace);
+            });
+
+            services.AddTransient<IDefinitionFinderFactory>(provider => {
+                var workspace = provider.GetService<IVirtualWorkspaceManager>();
+
+                var fileHandlerFactory = provider.GetService<IWorkspaceFileHandlerFactory>();
+                var loggerFactory = provider.GetService<ILoggerFactory>();
+
+                return new DefinitionFinderFactory(loggerFactory, fileHandlerFactory, workspace);
             });
         }
+
     }
 }

@@ -8,6 +8,5 @@ namespace Ink.LanguageServerProtocol.Backend.Interfaces
     public interface IDiagnosticManager
     {
         Task Compile(Uri scopeUri);
-        Task<LocationOrLocationLinks> GetDefinition(Position position, Uri File);
     }
 }

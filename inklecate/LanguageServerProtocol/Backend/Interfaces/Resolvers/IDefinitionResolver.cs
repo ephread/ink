@@ -1,10 +1,11 @@
 using System;
+using System.Threading;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace Ink.LanguageServerProtocol.Backend.Interfaces
 {
     public interface IDefinitionResolver
     {
-        LocationOrLocationLinks DefinitionForSymbolAt(Position position, Uri file);
+        LocationOrLocationLinks DefinitionForSymbolAt(Position position, Uri file, CancellationToken cancellationToken);
     }
 }

@@ -16,31 +16,27 @@ using Ink.LanguageServerProtocol.Helpers;
 namespace Ink.LanguageServerProtocol.Backend
 {
     // Compile or run static analysis, then push diagnostics back to the client.
-    public class DiagnosticManager: IDiagnosticManager
+    public class Diagnostician: IDiagnostician
     {
-        private readonly ILogger<DiagnosticManager> _logger;
+        private readonly ILogger<Diagnostician> _logger;
         private readonly ILanguageServerConnection _connection;
         private readonly IVirtualWorkspaceManager _workspace;
-        private readonly IWorkspaceFileHandlerFactory _fileHandlerFactory;
+        private readonly IWorkspaceFileHandler _fileHandler;
 
         private Dictionary<Uri, List<CompilationError>> _errors;
-        private IWorkspaceFileHandler _currentFileHandler;
-
-        private ISymbolResolver _currentSymbolResolver;
-        private IDefinitionResolver _currentDefinitionResolver;
 
 /* ************************************************************************** */
 
-        public DiagnosticManager(
-            ILogger<DiagnosticManager> logger,
+        public Diagnostician(
+            ILogger<Diagnostician> logger,
             ILanguageServerConnection connection,
             IVirtualWorkspaceManager workspace,
-            IWorkspaceFileHandlerFactory fileHandlerFactory)
+            IWorkspaceFileHandler fileHandler)
         {
             _logger = logger;
             _connection = connection;
             _workspace = workspace;
-            _fileHandlerFactory = fileHandlerFactory;
+            _fileHandler = fileHandler;
 
             _errors = new Dictionary<Uri, List<CompilationError>>();
         }
@@ -48,24 +44,22 @@ namespace Ink.LanguageServerProtocol.Backend
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task Compile(Uri documentUri)
+        public async Task<List<Uri>> CompileAndDiagnose(List<Uri> previousFilesWithErrors)
         {
-            _currentFileHandler = _fileHandlerFactory.CreateFileHandler(documentUri);
-
             _logger.LogDebug("Retrieving main document URI…");
-            var mainDocumentUri = await _currentFileHandler.GetMainDocument();
+            var mainDocumentUri = await _fileHandler.GetMainDocument();
 
             _logger.LogDebug($"Retrieved. Uri is: '{mainDocumentUri}'");
-            var inputString = _currentFileHandler.LoadDocumentContent(mainDocumentUri);
+            var inputString = _fileHandler.LoadDocumentContent(mainDocumentUri);
 
-            ClearErrors();
+            PrepareErrors(previousFilesWithErrors);
 
             var compiler = new Compiler(inputString, new Compiler.Options {
                 sourceFilename = mainDocumentUri.LocalPath,
                 pluginNames = new List<string>(),
                 countAllVisits = false,
                 errorHandler = OnError,
-                fileHandler = _currentFileHandler
+                fileHandler = _fileHandler
             });
 
             using (_logger.TimeDebug("Compilation"))
@@ -75,19 +69,19 @@ namespace Ink.LanguageServerProtocol.Backend
                     compiler.Parse();
                 }
 
-                // TODO: Inject a Factory to create these dependencies.
-                _currentSymbolResolver = new SymbolResolver(_currentFileHandler);
-                _currentDefinitionResolver = new DefinitionResolver(_currentSymbolResolver, _currentFileHandler);
-
+                Stats stats;
                 using (_logger.TimeDebug("Statistics Generation"))
                 {
                     Stats.Symbols symbols = Stats.Symbols.Generate(compiler.parsedStory);
-                    Stats stats = Stats.Generate(symbols);
+                    stats = Stats.Generate(symbols);
 
                     PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
                 }
 
-                _currentSymbolResolver.Story = compiler.parsedStory;
+                _workspace.SetCompilationResult(mainDocumentUri, new CompilationResult() {
+                    Story = compiler.parsedStory,
+                    Stats = stats
+                });
 
                 using (_logger.TimeDebug("Code Generation"))
                 {
@@ -96,21 +90,8 @@ namespace Ink.LanguageServerProtocol.Backend
             }
 
             PublishDiagnosticsToClient();
-        }
 
-        public async Task<LocationOrLocationLinks> GetDefinition(Position position, Uri file) {
-            if (_currentDefinitionResolver == null)
-            {
-                return null;
-            }
-
-            LocationOrLocationLinks result;
-            using (_logger.TimeDebug("Definition Search"))
-            {
-                result = _currentDefinitionResolver.DefinitionForSymbolAt(position, file);
-            }
-
-            return result;
+            return _errors.Keys.ToList();
         }
 
 /* ************************************************************************** */
@@ -131,7 +112,7 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 GroupCollection groups = match.Groups;
 
-                var fileUri = _currentFileHandler.ResolveInkFileUri(groups[2].Value);
+                var fileUri = _fileHandler.ResolveInkFileUri(groups[2].Value);
                 if (!_errors.ContainsKey(fileUri))
                 {
                     _errors[fileUri] = new List<CompilationError>();
@@ -218,15 +199,17 @@ namespace Ink.LanguageServerProtocol.Backend
             }
         }
 
-        private void ClearErrors()
+        private void PrepareErrors(List<Uri> previousFilesWithErrors)
         {
-            foreach (var KeyValue in _errors)
+            if (previousFilesWithErrors == null) return;
+
+            foreach (var key in previousFilesWithErrors)
             {
-                KeyValue.Value.Clear();
+                _errors[key] = new List<CompilationError>();
             }
         }
 
-        private struct CompilationError
+        public struct CompilationError
         {
             public ErrorType type;
             public Uri file;

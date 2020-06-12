@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Ink.LanguageServerProtocol.Helpers;
@@ -25,14 +26,14 @@ namespace Ink.LanguageServerProtocol.Backend
         /// <param name="position">position to match against (cursor position)</param>
         /// <param name="file">the file in which look for the symbol</param>
         /// <returns>The symbol if found or null otherwise.</returns>
-        public object SymbolAt(Position position, Uri file)
+        public object SymbolAt(Position position, Uri file, CancellationToken cancellationToken)
         {
             if (Story == null)
             {
                 return null;
             }
 
-            return SymbolAt(position, file, Story);
+            return SymbolAt(position, file, Story, cancellationToken);
         }
 
         /// <summary>
@@ -44,8 +45,10 @@ namespace Ink.LanguageServerProtocol.Backend
         /// <param name="file">the file in which look for the symbol</param>
         /// <param name="object">the current node</param>
         /// <returns>The symbol if found or null otherwise.</returns>
-        private object SymbolAt(Position position, Uri file, Ink.Parsed.Object @object)
+        private object SymbolAt(Position position, Uri file, Ink.Parsed.Object @object, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested) return null;
+
             // Handling choices in a specific branch, since they can be labeled
             // or conditional.
             if (@object is Parsed.Choice choice)
@@ -65,7 +68,7 @@ namespace Ink.LanguageServerProtocol.Backend
                     // because this is a terminal path. If no matching
                     // symbol is found in the condition, there's no point
                     // in backtracking to test against other types.
-                    return SymbolAt(position, file, choice.condition);
+                    return SymbolAt(position, file, choice.condition, cancellationToken);
                 }
             }
 
@@ -108,7 +111,7 @@ namespace Ink.LanguageServerProtocol.Backend
                     {
                         if (isObjectMatchingPositionAndFile(argument, position, file))
                         {
-                            var result = SymbolAt(position, file, argument);
+                            var result = SymbolAt(position, file, argument, cancellationToken);
 
                             if (result != null)
                             {
@@ -142,7 +145,7 @@ namespace Ink.LanguageServerProtocol.Backend
                                           isObjectMatchingPositionAndFile(subObject, position, file);
                 if (shouldDrillFurther)
                 {
-                    var result = SymbolAt(position, file, subObject);
+                    var result = SymbolAt(position, file, subObject, cancellationToken);
 
                     if (result != null)
                     {

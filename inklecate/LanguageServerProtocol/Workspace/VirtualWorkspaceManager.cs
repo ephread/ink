@@ -5,6 +5,7 @@ using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using Ink.LanguageServerProtocol.Helpers;
+using Ink.LanguageServerProtocol.Backend.Interfaces;
 
 namespace Ink.LanguageServerProtocol.Workspace
 {
@@ -17,7 +18,8 @@ namespace Ink.LanguageServerProtocol.Workspace
         private readonly ILanguageServerEnvironment _environment;
         private readonly ILanguageServerConnection _connection;
 
-        private readonly Dictionary<Uri, TextDocumentItem> _dictionary;
+        private readonly Dictionary<Uri, TextDocumentItem> _documents;
+        private readonly Dictionary<Uri, ICompilationResult> _compilationResults;
 
         public Uri Uri {
             get { return _environment.RootUri; }
@@ -34,7 +36,8 @@ namespace Ink.LanguageServerProtocol.Workspace
             _environment = environment;
             _connection = connection;
 
-            _dictionary = new Dictionary<Uri, TextDocumentItem>();
+            _documents = new Dictionary<Uri, TextDocumentItem>();
+            _compilationResults = new Dictionary<Uri, ICompilationResult>();
         }
 
 /* ************************************************************************** */
@@ -45,7 +48,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             _logger.LogDebug($"Retrieving document at key: '{uri}'");
 
             TextDocumentItem documentItem = null;
-            _dictionary.TryGetValue(uri, out documentItem);
+            _documents.TryGetValue(uri, out documentItem);
 
             return documentItem;
         }
@@ -55,7 +58,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             uri = UriHelper.fromClientUri(uri);
 
             _logger.LogDebug($"Setting document at key: '{uri}'");
-            _dictionary[uri] = document;
+            _documents[uri] = document;
         }
 
         public void UpdateContentOfTextDocument(Uri uri, String text)
@@ -63,7 +66,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             uri = UriHelper.fromClientUri(uri);
 
             TextDocumentItem documentItem = null;
-            _dictionary.TryGetValue(uri, out documentItem);
+            _documents.TryGetValue(uri, out documentItem);
 
             if (documentItem != null)
             {
@@ -81,7 +84,32 @@ namespace Ink.LanguageServerProtocol.Workspace
             uri = UriHelper.fromClientUri(uri);
 
             _logger.LogDebug($"Removing document at key: '{uri}'");
-            _dictionary.Remove(uri);
+            _documents.Remove(uri);
+
+            // If no documents are opened, compilation results are cleared.
+            // This ensures any compilation results attached to the main
+            // document is removed.
+            if (_documents.Count == 0)
+            {
+                _compilationResults.Clear();
+            }
+            // Otherwise, we just remove the compilation result attached to the
+            // closed document. Note that if the workspace has a main document,
+            // this won't do anything.
+            else if (_compilationResults.ContainsKey(uri))
+            {
+                _compilationResults.Remove(uri);
+            }
+        }
+
+        public ICompilationResult GetCompilationResult(Uri uri)
+        {
+            return _compilationResults.GetValueOrDefault(uri);
+        }
+
+        public void SetCompilationResult(Uri uri, ICompilationResult result)
+        {
+            _compilationResults[uri] = result;
         }
 
         public Uri ResolvePath(string path) {

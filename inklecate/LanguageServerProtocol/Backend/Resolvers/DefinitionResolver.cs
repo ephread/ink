@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Linq;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
@@ -29,9 +30,11 @@ namespace Ink.LanguageServerProtocol.Backend
         /// <param name="file">the file in which look for the symbol</param>
         /// <param name="file"></param>
         /// <returns></returns>
-        public LocationOrLocationLinks DefinitionForSymbolAt(Position position, Uri file)
+        public LocationOrLocationLinks DefinitionForSymbolAt(Position position, Uri file, CancellationToken cancellationToken)
         {
-            var parsedObject = _symbolResolver.SymbolAt(position, file);
+            var parsedObject = _symbolResolver.SymbolAt(position, file, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested) return null;
 
             if (parsedObject == null)
             {
@@ -49,6 +52,8 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 return LocationFromMetadata(declarationIdentifier.debugMetadata);
             }
+
+            if (cancellationToken.IsCancellationRequested) return null;
 
             // With diverts, the definition is resolved through Divert.Path.
             if (parsedObject is Parsed.Divert divert && divert.targetContent?.debugMetadata?.fileName != null)
@@ -100,6 +105,8 @@ namespace Ink.LanguageServerProtocol.Backend
                 return null;
             }
 
+            if (cancellationToken.IsCancellationRequested) return null;
+
             // With function calls, the definition is resolved through
             // FunctionCall.proxyDivert. Not that this branch only handles
             // function names; function parameters are handled by the
@@ -129,6 +136,8 @@ namespace Ink.LanguageServerProtocol.Backend
                     }
                 }
             }
+
+            if (cancellationToken.IsCancellationRequested) return null;
 
             // With lists, we check every single list item and resolve them
             // to find the definition.
@@ -166,6 +175,8 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 return LocationFromMetadata(listElementDefinition.identifier.debugMetadata);
             }
+
+            if (cancellationToken.IsCancellationRequested) return null;
 
             if (parsedObject is Parsed.VariableReference variableReference)
             {
@@ -256,6 +267,8 @@ namespace Ink.LanguageServerProtocol.Backend
                 return null;
             }
 
+            if (cancellationToken.IsCancellationRequested) return null;
+
             if (parsedObject is Parsed.VariableAssignment variableAssignment)
             {
                 // Assignements can be the definition point.
@@ -284,6 +297,8 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 return LocationFromMetadata(constantDeclaration.constantIdentifier.debugMetadata);
             }
+
+            if (cancellationToken.IsCancellationRequested) return null;
 
             // Unary Expressions
 

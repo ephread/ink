@@ -1,24 +1,21 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
-using MediatR;
+using Ink.LanguageServerProtocol.Extensions;
 using Microsoft.Extensions.Logging;
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
-using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
-
-
 using OmniSharp.Extensions.JsonRpc;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
     public class InkDefinitionHandler : DefinitionHandler
     {
-        private readonly IDiagnosticManager _diagnosticManager;
+        private readonly ILogger<InkDefinitionHandler> _logger;
+        private readonly IVirtualWorkspaceManager _virtualWorkspace;
+        private readonly IDefinitionManager _definitionManager;
 
         private static readonly DocumentSelector _documentSelector = new DocumentSelector(
             new DocumentFilter()
@@ -27,18 +24,29 @@ namespace Ink.LanguageServerProtocol.Handlers
             }
         );
 
-        public InkDefinitionHandler(IDiagnosticManager diagnosticManager)
+        public InkDefinitionHandler(
+            ILogger<InkDefinitionHandler> logger,
+            IVirtualWorkspaceManager workspace,
+            IDefinitionManager definitionManager)
             : base(new TextDocumentRegistrationOptions()
             {
                 DocumentSelector = _documentSelector
             })
         {
-            _diagnosticManager = diagnosticManager;
+            _logger = logger;
+            _virtualWorkspace = workspace;
+            _definitionManager = definitionManager;
         }
 
         public async override Task<LocationOrLocationLinks> Handle(DefinitionParams request, CancellationToken cancellationToken)
         {
-            return await _diagnosticManager.GetDefinition(request.Position, request.TextDocument.Uri);
+            LocationOrLocationLinks locations;
+            using (_logger.TimeDebug("Definition Search"))
+            {
+                locations = await _definitionManager.GetDefinition(request.Position, request.TextDocument.Uri, cancellationToken);
+            }
+
+            return locations;
         }
 
         public override void SetCapability(DefinitionCapability capability)

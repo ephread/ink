@@ -17,9 +17,10 @@ namespace Ink.LanguageServerProtocol.Handlers
     {
         private readonly ILogger<InkTextDocumentHandler> _logger;
         private readonly IVirtualWorkspaceManager _virtualWorkspace;
-        private readonly IDiagnosticManager _processor;
+        private readonly IDiagnosticManager _diagnosticManager;
+        private readonly IDefinitionManager _definitionManager;
 
-        private readonly DocumentSelector _documentSelector = new DocumentSelector(
+        private static readonly DocumentSelector _documentSelector = new DocumentSelector(
             new DocumentFilter()
             {
                 Pattern = "**/*.ink"
@@ -29,11 +30,13 @@ namespace Ink.LanguageServerProtocol.Handlers
         public InkTextDocumentHandler(
             ILogger<InkTextDocumentHandler> logger,
             IVirtualWorkspaceManager workspace,
-            IDiagnosticManager processor)
+            IDiagnosticManager diagnosticManager,
+            IDefinitionManager definitionManager)
         {
             _logger = logger;
             _virtualWorkspace = workspace;
-            _processor = processor;
+            _diagnosticManager = diagnosticManager;
+            _definitionManager = definitionManager;
         }
 
         public TextDocumentAttributes GetTextDocumentAttributes(Uri uri)
@@ -47,6 +50,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
             // Since synchronisation is requested as full text, it's assumed there
             // will be only one change in the collection for now.
+            // TODO: Review this in the future.
             var enumerator = request.ContentChanges.GetEnumerator();
             if (enumerator.MoveNext())
             {
@@ -54,7 +58,7 @@ namespace Ink.LanguageServerProtocol.Handlers
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.Compile(request.TextDocument.Uri);
 
             return Unit.Value;
         }
@@ -65,7 +69,7 @@ namespace Ink.LanguageServerProtocol.Handlers
 
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.Compile(request.TextDocument.Uri);
 
             return Unit.Value;
         }
@@ -75,6 +79,7 @@ namespace Ink.LanguageServerProtocol.Handlers
             _logger.LogDebug($"Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.RemoveTextDocument(request.TextDocument.Uri);
+            _definitionManager.RemoveDefinitionFinder(request.TextDocument.Uri);
 
             return Unit.Task;
         }
