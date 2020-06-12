@@ -5,6 +5,7 @@ namespace Ink.Parsed
     public class FunctionCall : Expression
     {
         public string name { get { return _proxyDivert.target.firstComponent; } }
+        public Divert proxyDivert { get { return _proxyDivert; } }
         public List<Expression> arguments { get { return _proxyDivert.arguments; } }
         public Runtime.Divert runtimeDivert { get { return _proxyDivert.runtimeDivert; } }
         public bool isChoiceCount { get { return name == "CHOICE_COUNT"; } }
