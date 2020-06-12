@@ -9,6 +9,7 @@ namespace Ink.LanguageServerProtocol.Backend.Interfaces
     public interface IDefinitionManager
     {
         Task<LocationOrLocationLinks> GetDefinition(Position position, Uri File, CancellationToken cancellationToken);
+        Task<Hover> GetHover(Position position, Uri File, CancellationToken cancellationToken);
         void RemoveDefinitionFinder(Uri documentUri);
         void RemoveAllDefinitionFinders();
     }

@@ -82,6 +82,7 @@ namespace Ink.LanguageServerProtocol
                     .SetMinimumLevel(LogLevel.Debug))
                 .WithHandler<InkTextDocumentHandler>()
                 .WithHandler<InkDefinitionHandler>()
+                .WithHandler<InkHoverHandler>()
                 .WithServices(Services)
                 .OnInitialize(Initialize);
         }

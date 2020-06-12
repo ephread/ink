@@ -262,7 +262,8 @@ namespace Ink.LanguageServerProtocol.Backend
                    @object is Parsed.ConstantDeclaration ||
                    @object is Parsed.FunctionCall ||
                    @object is Parsed.IncDecExpression ||
-                   @object is Parsed.UnaryExpression;
+                   @object is Parsed.UnaryExpression ||
+                   @object is Parsed.Sequence;
         }
     }
 }

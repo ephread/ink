@@ -31,16 +31,16 @@ namespace Ink.LanguageServerProtocol.Backend
 
         public async Task<LocationOrLocationLinks> GetDefinition(Position position, Uri documentUri, CancellationToken cancellationToken)
         {
-            IDefinitionFinder definitionFinder;
-            if (!_definitionFinders.TryGetValue(documentUri, out definitionFinder))
-            {
-                definitionFinder = _definitionFinderFactory.CreateDefinitionFinder(documentUri);
-                await definitionFinder.retrieveMainDocument();
-
-                _definitionFinders[documentUri] = definitionFinder;
-            }
+            var definitionFinder = await GetDefinitionFinder(documentUri);
 
             return definitionFinder.GetDefinition(position, cancellationToken);
+        }
+
+        public async Task<Hover> GetHover(Position position, Uri documentUri, CancellationToken cancellationToken)
+        {
+            var definitionFinder = await GetDefinitionFinder(documentUri);
+
+            return definitionFinder.GetHover(position, cancellationToken);
         }
 
         public void RemoveDefinitionFinder(Uri documentUri)
@@ -51,6 +51,20 @@ namespace Ink.LanguageServerProtocol.Backend
         public void RemoveAllDefinitionFinders()
         {
             _definitionFinders.Clear();
+        }
+
+        private async Task<IDefinitionFinder> GetDefinitionFinder(Uri documentUri)
+        {
+            IDefinitionFinder definitionFinder;
+            if (!_definitionFinders.TryGetValue(documentUri, out definitionFinder))
+            {
+                definitionFinder = _definitionFinderFactory.CreateDefinitionFinder(documentUri);
+                await definitionFinder.retrieveMainDocument();
+
+                _definitionFinders[documentUri] = definitionFinder;
+            }
+
+            return definitionFinder;
         }
     }
 }

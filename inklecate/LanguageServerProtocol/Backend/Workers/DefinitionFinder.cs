@@ -17,6 +17,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
         private readonly SymbolResolver _symbolResolver;
         private readonly DefinitionResolver _definitionResolver;
+        private readonly HoverResolver _hoverResolver;
 
         private readonly Uri _documentUri;
         private Uri _mainDocumentUri;
@@ -34,8 +35,10 @@ namespace Ink.LanguageServerProtocol.Backend
             _fileHandler = fileHandler;
             _documentUri = documentUri;
 
+            // TODO: Should be injected.
             _symbolResolver = new SymbolResolver(_fileHandler);
             _definitionResolver = new DefinitionResolver(_symbolResolver, _fileHandler);
+            _hoverResolver = new HoverResolver(_symbolResolver, _fileHandler);
         }
 
     /* ********************************************************************** */
@@ -55,6 +58,26 @@ namespace Ink.LanguageServerProtocol.Backend
             using (_logger.TimeDebug("Definition Resolution"))
             {
                 result = _definitionResolver.DefinitionForSymbolAt(position, _documentUri, cancellationToken);
+            }
+
+            return result;
+        }
+
+        public Hover GetHover(Position position, CancellationToken cancellationToken)
+        {
+            var compilationResult = _workspace.GetCompilationResult(_mainDocumentUri);
+
+            if (compilationResult == null)
+            {
+                return null;
+            }
+
+            _symbolResolver.Story = compilationResult.Story;
+
+            Hover result;
+            using (_logger.TimeDebug("Definition Resolution"))
+            {
+                result = _hoverResolver.HoverForSymbolAt(position, _documentUri, cancellationToken);
             }
 
             return result;

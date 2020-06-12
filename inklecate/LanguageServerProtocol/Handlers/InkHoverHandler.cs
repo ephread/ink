@@ -11,9 +11,9 @@ using OmniSharp.Extensions.JsonRpc;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
-    public class InkDefinitionHandler : DefinitionHandler
+    public class InkHoverHandler : HoverHandler
     {
-        private readonly ILogger<InkDefinitionHandler> _logger;
+        private readonly ILogger<InkHoverHandler> _logger;
         private readonly IDefinitionManager _definitionManager;
 
         private static readonly DocumentSelector _documentSelector = new DocumentSelector(
@@ -23,8 +23,8 @@ namespace Ink.LanguageServerProtocol.Handlers
             }
         );
 
-        public InkDefinitionHandler(
-            ILogger<InkDefinitionHandler> logger,
+        public InkHoverHandler(
+            ILogger<InkHoverHandler> logger,
             IDefinitionManager definitionManager)
             : base(new TextDocumentRegistrationOptions()
             {
@@ -35,20 +35,15 @@ namespace Ink.LanguageServerProtocol.Handlers
             _definitionManager = definitionManager;
         }
 
-        public async override Task<LocationOrLocationLinks> Handle(DefinitionParams request, CancellationToken cancellationToken)
+        public async override Task<Hover> Handle(HoverParams request, CancellationToken cancellationToken)
         {
-            LocationOrLocationLinks locations;
-            using (_logger.TimeDebug("Definition Search"))
+            Hover hover;
+            using (_logger.TimeDebug("Hover Search"))
             {
-                locations = await _definitionManager.GetDefinition(request.Position, request.TextDocument.Uri, cancellationToken);
+                hover = await _definitionManager.GetHover(request.Position, request.TextDocument.Uri, cancellationToken);
             }
 
-            return locations;
-        }
-
-        public override void SetCapability(DefinitionCapability capability)
-        {
-
+            return hover;
         }
     }
 }
