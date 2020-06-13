@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
 using Ink.LanguageServerProtocol.Extensions;
+using Ink.LanguageServerProtocol.Models;
 using Microsoft.Extensions.Logging;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
@@ -15,28 +17,27 @@ using Ink.LanguageServerProtocol.Helpers;
 namespace Ink.LanguageServerProtocol.Backend
 {
     // Compile or run static analysis, then push diagnostics back to the client.
-    public class DiagnosticManager: IDiagnosticManager
+    public class Diagnostician: IDiagnostician
     {
-        private readonly ILogger<DiagnosticManager> _logger;
+        private readonly ILogger<Diagnostician> _logger;
         private readonly ILanguageServerConnection _connection;
         private readonly IVirtualWorkspaceManager _workspace;
-        private readonly IWorkspaceFileHandlerFactory _fileHandlerFactory;
+        private readonly IWorkspaceFileHandler _fileHandler;
 
-        private Dictionary<Uri, List<CompilationError>> _errors;
-        private IWorkspaceFileHandler _currentFileHandler;
+        private readonly Dictionary<Uri, List<CompilationError>> _errors;
 
 /* ************************************************************************** */
 
-        public DiagnosticManager(
-            ILogger<DiagnosticManager> logger,
+        public Diagnostician(
+            ILogger<Diagnostician> logger,
             ILanguageServerConnection connection,
             IVirtualWorkspaceManager workspace,
-            IWorkspaceFileHandlerFactory fileHandlerFactory)
+            IWorkspaceFileHandler fileHandler)
         {
             _logger = logger;
             _connection = connection;
             _workspace = workspace;
-            _fileHandlerFactory = fileHandlerFactory;
+            _fileHandler = fileHandler;
 
             _errors = new Dictionary<Uri, List<CompilationError>>();
         }
@@ -44,33 +45,60 @@ namespace Ink.LanguageServerProtocol.Backend
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task Compile(Uri documentUri)
+        public async Task<List<Uri>> CompileAndDiagnose(
+            List<Uri> previousFilesWithErrors,
+            CancellationToken cancellationToken)
         {
-            _currentFileHandler = _fileHandlerFactory.CreateFileHandler(documentUri);
-
             _logger.LogDebug("Retrieving main document URI…");
-            var mainDocumentUri = await _currentFileHandler.GetMainDocument();
+            var mainDocumentUri = await _fileHandler.ResolveMainDocument();
 
             _logger.LogDebug($"Retrieved. Uri is: '{mainDocumentUri}'");
-            var inputString = _currentFileHandler.LoadDocumentContent(mainDocumentUri);
+            var inputString = _fileHandler.LoadDocumentContent(mainDocumentUri);
 
-            ClearErrors();
+            PrepareErrors(previousFilesWithErrors);
 
             var compiler = new Compiler(inputString, new Compiler.Options {
                 sourceFilename = mainDocumentUri.LocalPath,
                 pluginNames = new List<string>(),
                 countAllVisits = false,
                 errorHandler = OnError,
-                fileHandler = _currentFileHandler
+                fileHandler = _fileHandler
             });
 
             using (_logger.TimeDebug("Compilation"))
             {
-                compiler.Compile();
-            }
-            PushDiagnosticsToClient();
+                using (_logger.TimeDebug("Parsing"))
+                {
+                    compiler.Parse();
+                }
 
-            _currentFileHandler = null;
+                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
+
+                Stats stats;
+                using (_logger.TimeDebug("Statistics Generation"))
+                {
+                    Stats.Symbols symbols = Stats.Symbols.Generate(compiler.parsedStory);
+                    stats = Stats.Generate(symbols);
+
+                    PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
+                }
+
+                _workspace.SetCompilationResult(mainDocumentUri, new CompilationResult() {
+                    Story = compiler.parsedStory,
+                    Stats = stats
+                });
+
+                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
+
+                using (_logger.TimeDebug("Code Generation"))
+                {
+                    compiler.Generate();
+                }
+            }
+
+            PublishDiagnosticsToClient();
+
+            return _errors.Keys.ToList();
         }
 
 /* ************************************************************************** */
@@ -91,7 +119,7 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 GroupCollection groups = match.Groups;
 
-                var fileUri = _currentFileHandler.ResolveInkFileUri(groups[2].Value);
+                var fileUri = _fileHandler.ResolveInkFileUri(groups[2].Value);
                 if (!_errors.ContainsKey(fileUri))
                 {
                     _errors[fileUri] = new List<CompilationError>();
@@ -106,7 +134,7 @@ namespace Ink.LanguageServerProtocol.Backend
             }
         }
 
-        private void PushDiagnosticsToClient()
+        private void PublishDiagnosticsToClient()
         {
             _logger.LogDebug($"Publishing {_errors.Count} file diagnostic(s) to client.");
             foreach (var KeyValue in _errors)
@@ -116,7 +144,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 }).ToList();
 
                 var diagnosticParams = new PublishDiagnosticsParams() {
-                    Uri = UriHelper.toClientUri(KeyValue.Key),
+                    Uri = UriHelper.ToClientUri(KeyValue.Key),
                     Diagnostics = new Container<Diagnostic>(diagnostics)
                 };
 
@@ -131,6 +159,19 @@ namespace Ink.LanguageServerProtocol.Backend
 
                 _connection.Document.PublishDiagnostics(diagnosticParams);
             }
+        }
+
+        private void PublishStatisticsToClient(
+            Uri workspaceUri,
+            Uri mainDocumentUri,
+            Ink.Stats stats)
+        {
+            _logger.LogDebug("Publishing statistics to client");
+            _connection.Client.SendNotification("story/statistics", new StatisticsParams() {
+                WorkspaceUri = workspaceUri,
+                MainDocumentUri = mainDocumentUri,
+                Statistics = stats,
+            });
         }
 
         private Diagnostic DiagnosticFromCompilationError(CompilationError error)
@@ -152,28 +193,26 @@ namespace Ink.LanguageServerProtocol.Backend
 
         private DiagnosticSeverity SeverityFromType(ErrorType type)
         {
-            switch (type)
+            return type switch
             {
-                case ErrorType.Author:
-                    return DiagnosticSeverity.Information;
-                case ErrorType.Warning:
-                    return DiagnosticSeverity.Warning;
-                case ErrorType.Error:
-                    return DiagnosticSeverity.Error;
-                default:
-                    return DiagnosticSeverity.Error;
-            }
+                ErrorType.Author => DiagnosticSeverity.Information,
+                ErrorType.Warning => DiagnosticSeverity.Warning,
+                ErrorType.Error => DiagnosticSeverity.Error,
+                _ => DiagnosticSeverity.Error,
+            };
         }
 
-        private void ClearErrors()
+        private void PrepareErrors(List<Uri> previousFilesWithErrors)
         {
-            foreach (var KeyValue in _errors)
+            if (previousFilesWithErrors == null) return;
+
+            foreach (var key in previousFilesWithErrors)
             {
-                KeyValue.Value.Clear();
+                _errors[key] = new List<CompilationError>();
             }
         }
 
-        private struct CompilationError
+        public struct CompilationError
         {
             public ErrorType type;
             public Uri file;

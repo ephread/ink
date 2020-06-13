@@ -3,16 +3,17 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 
+// Reuse the elegant solution of Omisharp's Language Server package
+// for logging time.
+//
+// Originally licensed under the terms ot the MIT License.
 namespace Ink.LanguageServerProtocol.Extensions
 {
-    // Reusing the elegant solution of Omisharp's Language Server package
-    // for logging time.
-    //
-    // Originally licensed under the terms ot the MIT License.
-    //
-    // The idea is simple, the methods here will keep track of the current
-    // time when they're first called and then log the elapsed time
-    // once they're disposed, at the end of the `using` statement block.
+    /// <summary>
+    /// The methods here will keep track of the current time when they're
+    /// first called and then log the elapsed time once they're disposed,
+    /// at the end of the `using` statement block.
+    /// </summary>
     public static class TimeLoggerExtensions
     {
         class Disposable: IDisposable

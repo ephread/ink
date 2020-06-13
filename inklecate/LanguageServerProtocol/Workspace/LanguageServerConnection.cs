@@ -3,13 +3,12 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Ink.LanguageServerProtocol.Workspace
 {
-    // Wrap connection objects (Document, Workspace, Window and Client)
-    // into an injectable singleton.
     public class LanguageServerConnection: ILanguageServerConnection
     {
         private ILanguageServer _server;
 
-        public LanguageServerConnection() {
+        public LanguageServerConnection()
+        {
 
         }
 

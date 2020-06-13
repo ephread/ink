@@ -6,11 +6,11 @@ namespace Ink
 {
 	public partial class InkParser : StringParser
 	{
-        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null) 
-            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler) 
+        public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null)
+            : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler)
         {  }
 
-        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) { 
+        InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) {
             _filename = inkFilename;
 			RegisterExpressionOperators ();
             GenerateStatementLevelRules ();
@@ -92,17 +92,24 @@ namespace Ink
             return inputWithCommentsRemoved;
         }
 
+        protected Runtime.DebugMetadata CreateDebugMetadata(StringParserState.Element stateAtStart, StringParserState.Element stateAtEnd)
+        {
+            var md = new Runtime.DebugMetadata ();
+            md.startLineNumber = stateAtStart.lineIndex + 1;
+            md.endLineNumber = stateAtEnd.lineIndex + 1;
+            md.startCharacterNumber = stateAtStart.characterInLineIndex + 1;
+            md.endCharacterNumber = stateAtEnd.characterInLineIndex + 1;
+            md.fileName = _filename;
+            return md;
+        }
+
         protected override void RuleDidSucceed(object result, StringParserState.Element stateAtStart, StringParserState.Element stateAtEnd)
         {
             // Apply DebugMetadata based on the state at the start of the rule
             // (i.e. use line number as it was at the start of the rule)
             var parsedObj = result as Parsed.Object;
             if ( parsedObj) {
-                var md = new Runtime.DebugMetadata ();
-                md.startLineNumber = stateAtStart.lineIndex + 1;
-                md.endLineNumber = stateAtEnd.lineIndex + 1;
-                md.fileName = _filename;
-                parsedObj.debugMetadata = md;
+                parsedObj.debugMetadata = CreateDebugMetadata(stateAtStart, stateAtEnd);
                 return;
             }
 
@@ -111,21 +118,22 @@ namespace Ink
             if (parsedListObjs != null) {
                 foreach (var parsedListObj in parsedListObjs) {
                     if (!parsedListObj.hasOwnDebugMetadata) {
-                        var md = new Runtime.DebugMetadata ();
-                        md.startLineNumber = stateAtStart.lineIndex + 1;
-                        md.endLineNumber = stateAtEnd.lineIndex + 1;
-                        md.fileName = _filename;
-                        parsedListObj.debugMetadata = md;
+                        parsedListObj.debugMetadata = CreateDebugMetadata(stateAtStart, stateAtEnd);
                     }
                 }
             }
+
+            var id = result as Parsed.Identifier;
+            if (id != null) {
+                id.debugMetadata = CreateDebugMetadata(stateAtStart, stateAtEnd);
+            }
         }
-            
+
         protected bool parsingStringExpression
         {
             get {
                 return GetFlag ((uint)CustomFlags.ParsingString);
-            } 
+            }
             set {
                 SetFlag ((uint)CustomFlags.ParsingString, value);
             }

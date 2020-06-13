@@ -9,8 +9,6 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Ink.LanguageServerProtocol
 {
-    // Will resolve file names and then ask the virtual workspace to
-    // either read files from the disk or return in-memory buffers.
     public class WorkspaceFileHandler: IWorkspaceFileHandler
     {
         private readonly ILogger<WorkspaceFileHandler> _logger;
@@ -86,8 +84,7 @@ namespace Ink.LanguageServerProtocol
             }
         }
 
-        // Fetch the entry point defined by the client for the scope URI.
-        public async Task<Uri> GetMainDocument()
+        public async Task<Uri> ResolveMainDocument()
         {
             var configurationParams = new ConfigurationParams() {
                 Items = new Container<ConfigurationItem>(new ConfigurationItem() {
@@ -119,6 +116,8 @@ namespace Ink.LanguageServerProtocol
         {
             return _workspace.ResolvePath(ResolveInkFilename(includeName));
         }
+
+/* ************************************************************************** */
 
         public string ResolveInkFilename (string includeName)
         {

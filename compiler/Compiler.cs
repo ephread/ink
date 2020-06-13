@@ -21,6 +21,12 @@ namespace Ink
             }
         }
 
+        public Runtime.Story runtimeStory {
+            get {
+                return _runtimeStory;
+            }
+        }
+
         public Compiler (string inkSource, Options options = null)
         {
             _inputString = inkSource;
@@ -36,10 +42,8 @@ namespace Ink
             return _parsedStory;
         }
 
-        public Runtime.Story Compile ()
+        public Runtime.Story Generate()
         {
-            Parse();
-
             if( _pluginManager != null )
                 _pluginManager.PostParse(_parsedStory);
 
@@ -54,6 +58,15 @@ namespace Ink
             } else {
                 _runtimeStory = null;
             }
+
+            return _runtimeStory;
+        }
+
+        public Runtime.Story Compile ()
+        {
+            Parse();
+
+            Generate();
 
             return _runtimeStory;
         }
@@ -94,7 +107,7 @@ namespace Ink
                     result.output = "DebugSource: " + dm.ToString ();
                 else
                     result.output = "DebugSource: Unknown source";
-            } 
+            }
 
             // Request for runtime path lookup (to line number)
             else if (inputResult.debugPathLookup != null) {

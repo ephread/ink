@@ -13,13 +13,21 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
+    /// <summary>
+    /// Handle synchronisation requests:
+    /// - 'textDocument/didOpen'
+    /// - 'textDocument/didClose'
+    /// - 'textDocument/didChange'
+    /// - 'textDocument/didSave'
+    /// </summary>
     public class InkTextDocumentHandler: ITextDocumentSyncHandler
     {
         private readonly ILogger<InkTextDocumentHandler> _logger;
         private readonly IVirtualWorkspaceManager _virtualWorkspace;
-        private readonly IDiagnosticManager _processor;
+        private readonly IDiagnosticManager _diagnosticManager;
+        private readonly IDefinitionManager _definitionManager;
 
-        private readonly DocumentSelector _documentSelector = new DocumentSelector(
+        private static readonly DocumentSelector _documentSelector = new DocumentSelector(
             new DocumentFilter()
             {
                 Pattern = "**/*.ink"
@@ -29,11 +37,13 @@ namespace Ink.LanguageServerProtocol.Handlers
         public InkTextDocumentHandler(
             ILogger<InkTextDocumentHandler> logger,
             IVirtualWorkspaceManager workspace,
-            IDiagnosticManager processor)
+            IDiagnosticManager diagnosticManager,
+            IDefinitionManager definitionManager)
         {
             _logger = logger;
             _virtualWorkspace = workspace;
-            _processor = processor;
+            _diagnosticManager = diagnosticManager;
+            _definitionManager = definitionManager;
         }
 
         public TextDocumentAttributes GetTextDocumentAttributes(Uri uri)
@@ -41,12 +51,15 @@ namespace Ink.LanguageServerProtocol.Handlers
             return new TextDocumentAttributes(uri, "ink");
         }
 
-        public async Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(
+            DidChangeTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didChange' for: '{request.TextDocument.Uri}'");
 
             // Since synchronisation is requested as full text, it's assumed there
             // will be only one change in the collection for now.
+            // TODO: Review this in the future.
             var enumerator = request.ContentChanges.GetEnumerator();
             if (enumerator.MoveNext())
             {
@@ -54,32 +67,39 @@ namespace Ink.LanguageServerProtocol.Handlers
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.CompileAndDiagnose(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }
 
-        public async Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(
+            DidOpenTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didOpen' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
-            await _processor.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.CompileAndDiagnose(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }
 
-        public Task<Unit> Handle(DidCloseTextDocumentParams request, CancellationToken cancellationToken)
+        public Task<Unit> Handle(
+            DidCloseTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.RemoveTextDocument(request.TextDocument.Uri);
+            _definitionManager.RemoveDefinitionFinder(request.TextDocument.Uri);
 
             return Unit.Task;
         }
 
-        public Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
+        public Task<Unit> Handle(
+            DidSaveTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didSave' for: '{request.TextDocument.Uri}'");
 
