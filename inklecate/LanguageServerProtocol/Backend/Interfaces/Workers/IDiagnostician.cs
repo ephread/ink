@@ -27,8 +27,6 @@ namespace Ink.LanguageServerProtocol.Backend.Interfaces
         /// request is received.
         /// </param>
         /// <returns>A list of files containing errors</returns>
-        Task<List<Uri>> CompileAndDiagnose(
-            List<Uri> previousFilesWithErrors,
-            CancellationToken cancellationToken);
+        Task CompileAndDiagnose(CancellationToken cancellationToken);
     }
 }

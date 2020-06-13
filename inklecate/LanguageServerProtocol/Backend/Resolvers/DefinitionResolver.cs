@@ -22,7 +22,6 @@ namespace Ink.LanguageServerProtocol.Backend
             _fileHandler = fileHandler;
         }
 
-
         /// <summary>
         /// Find the definition of the symbol at <c>position</c>, in <c>file</c>.
         /// </summary>

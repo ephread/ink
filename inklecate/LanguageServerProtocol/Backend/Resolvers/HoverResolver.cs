@@ -53,11 +53,11 @@ namespace Ink.LanguageServerProtocol.Backend
                         case "LIST_RANDOM":
                             return HoverFromMessage("`LIST_RANDOM` returns a random item from the list.");
                         case "LIST_MIN":
-                            return HoverFromMessage("`LIST_MIN` return the item with the smalest value. Note that it ignores items considered pout of the list.");
+                            return HoverFromMessage("`LIST_MIN` return the item with the smalest value. Note that it ignores items considered out of the list.");
                         case "LIST_MAX":
-                            return HoverFromMessage("`LIST_MAX` return the item with the largest value. Note that it ignores items considered pout of the list.");
+                            return HoverFromMessage("`LIST_MAX` return the item with the largest value. Note that it ignores items considered out of the list.");
                         case "LIST_COUNT":
-                            return HoverFromMessage("`LIST_COUNT` returns the number of items in the list. Note that it ignores items considered pout of the list.");
+                            return HoverFromMessage("`LIST_COUNT` returns the number of items in the list. Note that it ignores items considered out of the list.");
                         case "LIST_ALL":
                             return HoverFromMessage("`LIST_ALL` returns all items from the list regardless of whether they are considered _in_ or _out_.");
                         case "LIST_INVERT":

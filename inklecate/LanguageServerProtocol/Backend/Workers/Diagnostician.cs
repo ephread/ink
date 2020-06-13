@@ -24,7 +24,7 @@ namespace Ink.LanguageServerProtocol.Backend
         private readonly IVirtualWorkspaceManager _workspace;
         private readonly IWorkspaceFileHandler _fileHandler;
 
-        private readonly Dictionary<Uri, List<CompilationError>> _errors;
+        private Dictionary<Uri, List<CompilationError>> _errors;
 
 /* ************************************************************************** */
 
@@ -38,24 +38,22 @@ namespace Ink.LanguageServerProtocol.Backend
             _connection = connection;
             _workspace = workspace;
             _fileHandler = fileHandler;
-
-            _errors = new Dictionary<Uri, List<CompilationError>>();
         }
 
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task<List<Uri>> CompileAndDiagnose(
-            List<Uri> previousFilesWithErrors,
-            CancellationToken cancellationToken)
+        public async Task CompileAndDiagnose(CancellationToken cancellationToken)
         {
             _logger.LogDebug("Retrieving main document URI…");
+
             var mainDocumentUri = await _fileHandler.ResolveMainDocument();
 
             _logger.LogDebug($"Retrieved. Uri is: '{mainDocumentUri}'");
-            var inputString = _fileHandler.LoadDocumentContent(mainDocumentUri);
 
-            PrepareErrors(previousFilesWithErrors);
+            PrepareErrors(mainDocumentUri);
+
+            var inputString = _fileHandler.LoadDocumentContent(mainDocumentUri);
 
             var compiler = new Compiler(inputString, new Compiler.Options {
                 sourceFilename = mainDocumentUri.LocalPath,
@@ -72,7 +70,7 @@ namespace Ink.LanguageServerProtocol.Backend
                     compiler.Parse();
                 }
 
-                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
+                if (cancellationToken.IsCancellationRequested) return;
 
                 Stats stats;
                 using (_logger.TimeDebug("Statistics Generation"))
@@ -83,7 +81,7 @@ namespace Ink.LanguageServerProtocol.Backend
                     PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
                 }
 
-                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
+                if (cancellationToken.IsCancellationRequested) return;
 
                 using (_logger.TimeDebug("Code Generation"))
                 {
@@ -92,13 +90,12 @@ namespace Ink.LanguageServerProtocol.Backend
 
                 _workspace.SetCompilationResult(mainDocumentUri, new CompilationResult() {
                     Story = compiler.parsedStory,
-                    Stats = stats
+                    Stats = stats,
+                    Errors = CopyErrors(_errors)
                 });
             }
 
             PublishDiagnosticsToClient();
-
-            return _errors.Keys.ToList();
         }
 
 /* ************************************************************************** */
@@ -202,22 +199,32 @@ namespace Ink.LanguageServerProtocol.Backend
             };
         }
 
-        private void PrepareErrors(List<Uri> previousFilesWithErrors)
+        /// <summary>
+        /// Retrieve errors from the previous compilation results stored in
+        /// the workspace.
+        /// </summary>
+        /// <param name="mainDocumentUri"></param>
+        private void PrepareErrors(Uri mainDocumentUri)
         {
-            if (previousFilesWithErrors == null) return;
-
-            foreach (var key in previousFilesWithErrors)
+            var compilationResult = _workspace.GetCompilationResult(mainDocumentUri);
+            if (compilationResult != null)
             {
-                _errors[key] = new List<CompilationError>();
+                _errors = CopyErrors(compilationResult.Errors);
+
+                foreach (var keyValue in _errors)
+                {
+                    keyValue.Value.Clear();
+                }
+            }
+            else
+            {
+                _errors = new Dictionary<Uri, List<CompilationError>>();
             }
         }
 
-        public struct CompilationError
+        private Dictionary<Uri, List<CompilationError>> CopyErrors(Dictionary<Uri, List<CompilationError>> errors)
         {
-            public ErrorType type;
-            public Uri file;
-            public int lineNumber;
-            public string message;
+            return errors.ToDictionary(p => p.Key, p => p.Value.ToList());
         }
     }
 }

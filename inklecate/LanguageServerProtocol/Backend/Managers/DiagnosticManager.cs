@@ -13,7 +13,6 @@ namespace Ink.LanguageServerProtocol.Backend
         private readonly IDiagnosticianFactory _diagnosticianFactory;
 
         private IDiagnostician _currentDiagnostician;
-        private List<Uri> previousFilesWithErrors;
 
         public DiagnosticManager(
             ILogger<DiagnosticManager> logger,
@@ -27,9 +26,7 @@ namespace Ink.LanguageServerProtocol.Backend
         {
             _logger.LogDebug($"Creating new Diagnostician for: '{documentUri}'");
             _currentDiagnostician = _diagnosticianFactory.CreateDiagnostician(documentUri);
-            previousFilesWithErrors = await _currentDiagnostician.CompileAndDiagnose(
-                previousFilesWithErrors,
-                cancellationToken);
+            await _currentDiagnostician.CompileAndDiagnose(cancellationToken);
         }
     }
 }
