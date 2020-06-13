@@ -100,10 +100,10 @@ Supporting [multi-root workspace] would be a nice addition.
 
 A much needed feature. It shouldn't be too hard to build a list of suggestions from the compilation results. Things to consider:
 
-1. The completion needs to be available while a project can't build. Maybe keep track of the last successful result?
-2. It can be hard to figure out the context on a project that doesn't build; maybe traversing the partial tree coupled with a few regular expressions ran against the current line would be enough to figure out the context.
-3. Performance issues, how fast can the server build the project and provide completion as the user types?
-4. The API for [`textDocument/completion`] seems complex.
+1. the completion needs to be available while a project can't build. Maybe keep track of the last successful result?
+2. it can be hard to figure out the context on a project that doesn't build; maybe traversing the partial tree coupled with a few regular expressions ran against the current line would be enough to figure out the context.
+3. performance issues, how fast can the server build the project and provide completion as the user types?
+4. the API for [`textDocument/completion`] seems complex.
 
 [`textDocument/completion`]: https://microsoft.github.io/language-server-protocol/specifications/specification-current/#textDocument_completion
 
