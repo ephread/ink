@@ -6,7 +6,8 @@ namespace Ink.LanguageServerProtocol.Backend.Interfaces
 {
     public interface ISymbolResolver
     {
-        Ink.Parsed.Story Story { get; set; }
+        Parsed.Story Story { get; set; }
+
         object SymbolAt(Position position, Uri file, CancellationToken cancellationToken);
     }
 }

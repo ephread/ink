@@ -11,7 +11,10 @@ using OmniSharp.Extensions.JsonRpc;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
-    public class InkDefinitionHandler : DefinitionHandler
+    /// <summary>
+    /// Handle 'textDocument/definition' request.
+    /// </summary>
+    public class InkDefinitionHandler: DefinitionHandler
     {
         private readonly ILogger<InkDefinitionHandler> _logger;
         private readonly IDefinitionManager _definitionManager;
@@ -35,12 +38,19 @@ namespace Ink.LanguageServerProtocol.Handlers
             _definitionManager = definitionManager;
         }
 
-        public async override Task<LocationOrLocationLinks> Handle(DefinitionParams request, CancellationToken cancellationToken)
+        public async override Task<LocationOrLocationLinks> Handle(
+            DefinitionParams request,
+            CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Received 'textDocument/definition' for: '{request.TextDocument.Uri}'");
+
             LocationOrLocationLinks locations;
             using (_logger.TimeDebug("Definition Search"))
             {
-                locations = await _definitionManager.GetDefinition(request.Position, request.TextDocument.Uri, cancellationToken);
+                locations = await _definitionManager.GetDefinition(
+                    request.Position,
+                    request.TextDocument.Uri,
+                    cancellationToken);
             }
 
             return locations;

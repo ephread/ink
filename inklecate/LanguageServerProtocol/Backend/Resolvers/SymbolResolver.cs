@@ -55,14 +55,14 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 // The cursor is above the choice's label, we can't got further
                 // and return the corresponding identifier.
-                if (isIdentifierMatchingPositionAndFile(choice.identifier, position, file))
+                if (IsIdentifierMatchingPositionAndFile(choice.identifier, position, file))
                 {
                     return choice.identifier;
                 }
 
                 // The cursor is above the choice's condition, we're drilling
                 // into the condition.
-                if (isObjectMatchingPositionAndFile(choice.condition, position, file))
+                if (IsObjectMatchingPositionAndFile(choice.condition, position, file))
                 {
                     // Not that we don't check wether `SymbolAt` returns null.
                     // because this is a terminal path. If no matching
@@ -78,7 +78,7 @@ namespace Ink.LanguageServerProtocol.Backend
             {
                 // The cursor is above the gather's label, we can't got further
                 // and return the corresponding identifier.
-                if (isIdentifierMatchingPositionAndFile(gather.identifier, position, file))
+                if (IsIdentifierMatchingPositionAndFile(gather.identifier, position, file))
                 {
                     return gather.identifier;
                 }
@@ -88,7 +88,7 @@ namespace Ink.LanguageServerProtocol.Backend
             // implementing INamedContent.
             if (@object is Parsed.ExternalDeclaration declaration)
             {
-                if (isIdentifierMatchingPositionAndFile(declaration.identifier, position, file))
+                if (IsIdentifierMatchingPositionAndFile(declaration.identifier, position, file))
                 {
                     return declaration.identifier;
                 }
@@ -109,7 +109,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 {
                     foreach (var argument in functionCall.arguments)
                     {
-                        if (isObjectMatchingPositionAndFile(argument, position, file))
+                        if (IsObjectMatchingPositionAndFile(argument, position, file))
                         {
                             var result = SymbolAt(position, file, argument, cancellationToken);
 
@@ -126,7 +126,7 @@ namespace Ink.LanguageServerProtocol.Backend
             if (@object.content == null || @object.content.Count == 0)
             {
                 // Current object is a leaf, does it contain the position?
-                if (isObjectMatchingPositionAndFile(@object, position, file))
+                if (IsObjectMatchingPositionAndFile(@object, position, file))
                 {
                     return @object;
                 }
@@ -141,8 +141,8 @@ namespace Ink.LanguageServerProtocol.Backend
             foreach (var subObject in @object.content) {
                 // Weaves or objects without metadata are ignored
                 // and passed through.
-                bool shouldDrillFurther = isWeaveOrHasNoMetadata(subObject) ||
-                                          isObjectMatchingPositionAndFile(subObject, position, file);
+                bool shouldDrillFurther = IsWeaveOrHasNoMetadata(subObject) ||
+                                          IsObjectMatchingPositionAndFile(subObject, position, file);
                 if (shouldDrillFurther)
                 {
                     var result = SymbolAt(position, file, subObject, cancellationToken);
@@ -159,7 +159,7 @@ namespace Ink.LanguageServerProtocol.Backend
             //
             // Since these symbols have their children stored in content,
             // the general logic checks them first.
-            if (isValidToken(@object))
+            if (IsValidToken(@object))
             {
                 return @object;
             }
@@ -173,14 +173,14 @@ namespace Ink.LanguageServerProtocol.Backend
                 {
                     foreach (var argument in flowBase.arguments)
                     {
-                        if (isIdentifierMatchingPositionAndFile(argument.identifier, position, file))
+                        if (IsIdentifierMatchingPositionAndFile(argument.identifier, position, file))
                         {
                             return argument.identifier;
                         }
                     }
                 }
 
-                if (isIdentifierMatchingPositionAndFile(flowBase.identifier, position, file))
+                if (IsIdentifierMatchingPositionAndFile(flowBase.identifier, position, file))
                 {
                     return flowBase.identifier;
                 }
@@ -193,7 +193,7 @@ namespace Ink.LanguageServerProtocol.Backend
             }
         }
 
-        private bool isObjectMatchingPositionAndFile(
+        private bool IsObjectMatchingPositionAndFile(
             Ink.Parsed.Object @object,
             Position position,
             Uri file)
@@ -203,11 +203,11 @@ namespace Ink.LanguageServerProtocol.Backend
                 return false;
             }
 
-            return PositionHelper.isObjectAtPosition(@object, position) &&
-                   isObjectInFile(@object, file);
+            return PositionHelper.IsObjectAtPosition(@object, position) &&
+                   IsObjectInFile(@object, file);
         }
 
-        private bool isIdentifierMatchingPositionAndFile(
+        private bool IsIdentifierMatchingPositionAndFile(
             Parsed.Identifier identifier,
             Position position,
             Uri file)
@@ -217,21 +217,21 @@ namespace Ink.LanguageServerProtocol.Backend
                 return false;
             }
 
-            return PositionHelper.isIdentifierAtPosition(identifier, position) &&
-                   isFileInMetadata(identifier.debugMetadata, file);
+            return PositionHelper.IsIdentifierAtPosition(identifier, position) &&
+                   IsFileInMetadata(identifier.debugMetadata, file);
         }
 
-        private bool isObjectInFile(Ink.Parsed.Object @object, Uri file)
+        private bool IsObjectInFile(Ink.Parsed.Object @object, Uri file)
         {
             if (@object == null)
             {
                 return false;
             }
 
-            return isFileInMetadata(@object.debugMetadata, file);
+            return IsFileInMetadata(@object.debugMetadata, file);
         }
 
-        private bool isFileInMetadata(Runtime.DebugMetadata metadata, Uri file)
+        private bool IsFileInMetadata(Runtime.DebugMetadata metadata, Uri file)
         {
             if (metadata == null)
             {
@@ -242,21 +242,21 @@ namespace Ink.LanguageServerProtocol.Backend
             return _fileHandler.ResolveInkFilename(metadata.fileName) == file.LocalPath;
         }
 
-        private bool isWeaveOrHasNoMetadata(Ink.Parsed.Object @object)
+        private bool IsWeaveOrHasNoMetadata(Ink.Parsed.Object @object)
         {
             return @object is Ink.Parsed.Weave || @object.debugMetadata == null;
         }
 
         /// <summary>
         /// Sometimes a node can be the object we need if:
-        ///     1. none of its children narrow down the location;
-        ///     2. the object is considered a valid end token.
+        /// 1. none of its children narrow down the location;
+        /// 2. the object is considered a valid end token.
         /// </summary>
         /// <param name="object">the object to test</param>
         /// <returns>
-        ///     true if the object has a type matching a valid token.
+        /// true if the object has a type matching a valid token.
         /// </returns>
-        private bool isValidToken(Parsed.Object @object)
+        private bool IsValidToken(Parsed.Object @object)
         {
             return @object is Parsed.VariableAssignment ||
                    @object is Parsed.ConstantDeclaration ||

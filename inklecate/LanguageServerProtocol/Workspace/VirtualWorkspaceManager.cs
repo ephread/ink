@@ -9,14 +9,10 @@ using Ink.LanguageServerProtocol.Backend.Interfaces;
 
 namespace Ink.LanguageServerProtocol.Workspace
 {
-    // This class stores buffers for opened documents. In the
-    // future it will also return the content of any files in the workspace
-    // regardless of whether it's stored on the disk or in memory.
     public class VirtualWorkspaceManager: IVirtualWorkspaceManager
     {
         private readonly ILogger<VirtualWorkspaceManager> _logger;
         private readonly ILanguageServerEnvironment _environment;
-        private readonly ILanguageServerConnection _connection;
 
         private readonly Dictionary<Uri, TextDocumentItem> _documents;
         private readonly Dictionary<Uri, ICompilationResult> _compilationResults;
@@ -25,37 +21,34 @@ namespace Ink.LanguageServerProtocol.Workspace
             get { return _environment.RootUri; }
         }
 
-/* ************************************************************************** */
+    /* ********************************************************************** */
 
         public VirtualWorkspaceManager(
             ILogger<VirtualWorkspaceManager> logger,
-            ILanguageServerEnvironment environment,
-            ILanguageServerConnection connection)
+            ILanguageServerEnvironment environment)
         {
             _logger = logger;
             _environment = environment;
-            _connection = connection;
 
             _documents = new Dictionary<Uri, TextDocumentItem>();
             _compilationResults = new Dictionary<Uri, ICompilationResult>();
         }
 
-/* ************************************************************************** */
+    /* ********************************************************************** */
 
         public TextDocumentItem GetTextDocument(Uri uri)
         {
-            uri = UriHelper.fromClientUri(uri);
+            uri = UriHelper.FromClientUri(uri);
             _logger.LogDebug($"Retrieving document at key: '{uri}'");
 
-            TextDocumentItem documentItem = null;
-            _documents.TryGetValue(uri, out documentItem);
+            _documents.TryGetValue(uri, out TextDocumentItem documentItem);
 
             return documentItem;
         }
 
         public void SetTextDocument(Uri uri, TextDocumentItem document)
         {
-            uri = UriHelper.fromClientUri(uri);
+            uri = UriHelper.FromClientUri(uri);
 
             _logger.LogDebug($"Setting document at key: '{uri}'");
             _documents[uri] = document;
@@ -63,10 +56,9 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public void UpdateContentOfTextDocument(Uri uri, String text)
         {
-            uri = UriHelper.fromClientUri(uri);
+            uri = UriHelper.FromClientUri(uri);
 
-            TextDocumentItem documentItem = null;
-            _documents.TryGetValue(uri, out documentItem);
+            _documents.TryGetValue(uri, out TextDocumentItem documentItem);
 
             if (documentItem != null)
             {
@@ -81,7 +73,7 @@ namespace Ink.LanguageServerProtocol.Workspace
 
         public void RemoveTextDocument(Uri uri)
         {
-            uri = UriHelper.fromClientUri(uri);
+            uri = UriHelper.FromClientUri(uri);
 
             _logger.LogDebug($"Removing document at key: '{uri}'");
             _documents.Remove(uri);
@@ -112,7 +104,8 @@ namespace Ink.LanguageServerProtocol.Workspace
             _compilationResults[uri] = result;
         }
 
-        public Uri ResolvePath(string path) {
+        public Uri ResolvePath(string path)
+        {
             return ResolvePath(path, null);
         }
 
@@ -123,7 +116,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             // Path is already absolute, so it just gets converted to a Uri.
             if (Path.IsPathRooted(path))
             {
-                uri = UriHelper.fromPath(path);
+                uri = UriHelper.FromPath(path);
                 _logger.LogDebug($"Created Uri: '{uri}' from absolute path: '{path}'");
             }
             else
@@ -139,7 +132,7 @@ namespace Ink.LanguageServerProtocol.Workspace
                 // the last part of the path if the first argument
                 // doesn't have a trailing slash.
                 var fullPath = Path.Combine(rootUri.LocalPath, path);
-                uri = UriHelper.fromPath(fullPath);
+                uri = UriHelper.FromPath(fullPath);
 
                 _logger.LogDebug($"Created Uri: '{uri}' from directory Uri: '{rootUri}' and relative path: '{path}'");
             }

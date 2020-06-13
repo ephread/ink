@@ -3,13 +3,18 @@ using Newtonsoft.Json.Linq;
 
 namespace Ink.LanguageServerProtocol.Models
 {
+    /// <summary>
+    /// Configuration settings set on the client for ink.*
+    ///
+    /// Usually scoped at the file level (multi-root workspaces).
+    /// </summary>
     public class InkConfiguration
     {
         public readonly string mainFilePath = null;
 
         public bool IsMainStoryDefined
         {
-            get { return !String.IsNullOrWhiteSpace(mainFilePath); }
+            get { return !string.IsNullOrWhiteSpace(mainFilePath); }
         }
 
         public InkConfiguration()
@@ -17,15 +22,14 @@ namespace Ink.LanguageServerProtocol.Models
 
         }
 
-        public InkConfiguration(string mainFilePath, string inklecatePath)
+        public InkConfiguration(string mainFilePath)
         {
             this.mainFilePath = mainFilePath;
         }
 
         public InkConfiguration(InkConfiguration defaultConfiguration, JToken jToken)
         {
-            var jObject = jToken as JObject;
-            if (jObject != null)
+            if (jToken is JObject jObject)
             {
                 if (jObject.TryGetValue("languageServer", out JToken configJToken))
                 {

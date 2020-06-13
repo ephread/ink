@@ -8,10 +8,11 @@ A minimal implementation of the [Language Server Protocol (LSP)] for ink.
 
 ## Features
 - [x] Diagnostics
-- [ ] Statistics (through extensions)
+- [x] Statistics (through extensions)
+- [x] Go to definition
 - [ ] Story Previews
 - [ ] Auto completion
-- [ ] Go to definition
+
 - [ ] Refactoring?
 
 ## Limitations

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Ink.LanguageServerProtocol.Workspace.Interfaces;
@@ -23,7 +24,7 @@ namespace Ink.LanguageServerProtocol.Backend
         private readonly IVirtualWorkspaceManager _workspace;
         private readonly IWorkspaceFileHandler _fileHandler;
 
-        private Dictionary<Uri, List<CompilationError>> _errors;
+        private readonly Dictionary<Uri, List<CompilationError>> _errors;
 
 /* ************************************************************************** */
 
@@ -44,7 +45,9 @@ namespace Ink.LanguageServerProtocol.Backend
 /* ************************************************************************** */
 
         // Compile entire project.
-        public async Task<List<Uri>> CompileAndDiagnose(List<Uri> previousFilesWithErrors)
+        public async Task<List<Uri>> CompileAndDiagnose(
+            List<Uri> previousFilesWithErrors,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug("Retrieving main document URI…");
             var mainDocumentUri = await _fileHandler.GetMainDocument();
@@ -69,6 +72,8 @@ namespace Ink.LanguageServerProtocol.Backend
                     compiler.Parse();
                 }
 
+                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
+
                 Stats stats;
                 using (_logger.TimeDebug("Statistics Generation"))
                 {
@@ -82,6 +87,8 @@ namespace Ink.LanguageServerProtocol.Backend
                     Story = compiler.parsedStory,
                     Stats = stats
                 });
+
+                if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
 
                 using (_logger.TimeDebug("Code Generation"))
                 {
@@ -137,7 +144,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 }).ToList();
 
                 var diagnosticParams = new PublishDiagnosticsParams() {
-                    Uri = UriHelper.toClientUri(KeyValue.Key),
+                    Uri = UriHelper.ToClientUri(KeyValue.Key),
                     Diagnostics = new Container<Diagnostic>(diagnostics)
                 };
 
@@ -186,17 +193,13 @@ namespace Ink.LanguageServerProtocol.Backend
 
         private DiagnosticSeverity SeverityFromType(ErrorType type)
         {
-            switch (type)
+            return type switch
             {
-                case ErrorType.Author:
-                    return DiagnosticSeverity.Information;
-                case ErrorType.Warning:
-                    return DiagnosticSeverity.Warning;
-                case ErrorType.Error:
-                    return DiagnosticSeverity.Error;
-                default:
-                    return DiagnosticSeverity.Error;
-            }
+                ErrorType.Author => DiagnosticSeverity.Information,
+                ErrorType.Warning => DiagnosticSeverity.Warning,
+                ErrorType.Error => DiagnosticSeverity.Error,
+                _ => DiagnosticSeverity.Error,
+            };
         }
 
         private void PrepareErrors(List<Uri> previousFilesWithErrors)

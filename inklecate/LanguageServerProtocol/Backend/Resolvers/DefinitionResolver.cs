@@ -65,7 +65,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 for (int i = 0; i < components.Count; i++)
                 {
                     var pathIdentifier = components[i];
-                    if (PositionHelper.isIdentifierAtPosition(pathIdentifier, position))
+                    if (PositionHelper.IsIdentifierAtPosition(pathIdentifier, position))
                     {
                         // If the component is the tail, we just
                         // use targetContent since the resolution was
@@ -148,7 +148,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 {
                     foreach (var itemIdentifier in list.itemIdentifierList)
                     {
-                        if (PositionHelper.isIdentifierAtPosition(itemIdentifier, position))
+                        if (PositionHelper.IsIdentifierAtPosition(itemIdentifier, position))
                         {
                             var nameParts = itemIdentifier?.name.Split('.');
 
@@ -245,7 +245,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 // Next, let go up the hierarchy to find either a
                 // temp declaration or an argument of a function/knot.
                 // Reassignments are ignored.
-                var result = findVariableDeclarationInParents(variableReference.parent, variableReference.name);
+                var result = FindVariableDeclarationInParents(variableReference.parent, variableReference.name);
                 if (result is Parsed.VariableAssignment variableDeclaration)
                 {
                     return LocationFromMetadata(variableDeclaration.variableIdentifier.debugMetadata);
@@ -279,7 +279,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
                 // If it's not a declaration, we'll look in its ancestors to
                 // find the delcaration (either a temp or a parameter).
-                var result = findVariableDeclarationInParents(variableAssignment.parent, variableAssignment.variableName);
+                var result = FindVariableDeclarationInParents(variableAssignment.parent, variableAssignment.variableName);
                 if (result is Parsed.VariableAssignment variableDeclaration)
                 {
                     return LocationFromMetadata(variableDeclaration.variableIdentifier.debugMetadata);
@@ -321,7 +321,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 // Next, similar to VariableAssignent let's go up the hierarchy
                 // to find either a temp declaration or an argument
                 // of a function/knot. Reassignments are still ignored.
-                var result = findVariableDeclarationInParents(incDecExpression.parent, variableName);
+                var result = FindVariableDeclarationInParents(incDecExpression.parent, variableName);
                 if (result is Parsed.VariableAssignment variableDeclaration)
                 {
                     return LocationFromMetadata(variableDeclaration.variableIdentifier.debugMetadata);
@@ -338,7 +338,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
         // TODO: Use ancestors?
         // TODO: Don't go higher up than the first FlowDecl, because of scoping?
-        private object findVariableDeclarationInParents(Parsed.Object @object, string variableName)
+        private object FindVariableDeclarationInParents(Parsed.Object @object, string variableName)
         {
             var variableAssignment = @object as Parsed.VariableAssignment;
             if (variableAssignment && variableAssignment.isDeclaration)
@@ -369,7 +369,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
             if (@object.parent)
             {
-                return findVariableDeclarationInParents(@object.parent, variableName);
+                return FindVariableDeclarationInParents(@object.parent, variableName);
             }
 
             return null;

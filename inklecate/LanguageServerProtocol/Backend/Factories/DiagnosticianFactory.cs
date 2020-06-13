@@ -9,21 +9,18 @@ namespace Ink.LanguageServerProtocol
     class DiagnosticianFactory: IDiagnosticianFactory {
         private readonly ILoggerFactory _loggerFactory;
         private readonly IWorkspaceFileHandlerFactory _fileHandlerFactory;
-        private readonly ILanguageServerEnvironment _environment;
         private readonly ILanguageServerConnection _connection;
         private readonly IVirtualWorkspaceManager _workspace;
 
         public DiagnosticianFactory(
             ILoggerFactory loggerFactory,
             IWorkspaceFileHandlerFactory fileHandlerFactory,
-            ILanguageServerEnvironment environment,
             ILanguageServerConnection connection,
             IVirtualWorkspaceManager workspace
         )
         {
             _loggerFactory = loggerFactory;
             _fileHandlerFactory = fileHandlerFactory;
-            _environment = environment;
             _connection = connection;
             _workspace = workspace;
         }

@@ -38,7 +38,7 @@ namespace Ink.LanguageServerProtocol.Backend
             // TODO: Should be injected.
             _symbolResolver = new SymbolResolver(_fileHandler);
             _definitionResolver = new DefinitionResolver(_symbolResolver, _fileHandler);
-            _hoverResolver = new HoverResolver(_symbolResolver, _fileHandler);
+            _hoverResolver = new HoverResolver(_symbolResolver);
         }
 
     /* ********************************************************************** */
@@ -83,7 +83,7 @@ namespace Ink.LanguageServerProtocol.Backend
             return result;
         }
 
-        public async Task retrieveMainDocument()
+        public async Task RetrieveMainDocument()
         {
             _mainDocumentUri = await _fileHandler.GetMainDocument();
         }

@@ -11,7 +11,10 @@ using OmniSharp.Extensions.JsonRpc;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
-    public class InkHoverHandler : HoverHandler
+    /// <summary>
+    /// Handle 'textDocument/hover' request.
+    /// </summary>
+    public class InkHoverHandler: HoverHandler
     {
         private readonly ILogger<InkHoverHandler> _logger;
         private readonly IDefinitionManager _definitionManager;
@@ -35,12 +38,19 @@ namespace Ink.LanguageServerProtocol.Handlers
             _definitionManager = definitionManager;
         }
 
-        public async override Task<Hover> Handle(HoverParams request, CancellationToken cancellationToken)
+        public async override Task<Hover> Handle(
+            HoverParams request,
+            CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Received 'textDocument/hover' for: '{request.TextDocument.Uri}'");
+
             Hover hover;
             using (_logger.TimeDebug("Hover Search"))
             {
-                hover = await _definitionManager.GetHover(request.Position, request.TextDocument.Uri, cancellationToken);
+                hover = await _definitionManager.GetHover(
+                    request.Position,
+                    request.TextDocument.Uri,
+                    cancellationToken);
             }
 
             return hover;

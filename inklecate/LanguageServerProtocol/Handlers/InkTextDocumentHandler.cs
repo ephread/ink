@@ -13,6 +13,13 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
 
 namespace Ink.LanguageServerProtocol.Handlers
 {
+    /// <summary>
+    /// Handle synchronisation requests:
+    /// - 'textDocument/didOpen'
+    /// - 'textDocument/didClose'
+    /// - 'textDocument/didChange'
+    /// - 'textDocument/didSave'
+    /// </summary>
     public class InkTextDocumentHandler: ITextDocumentSyncHandler
     {
         private readonly ILogger<InkTextDocumentHandler> _logger;
@@ -44,7 +51,9 @@ namespace Ink.LanguageServerProtocol.Handlers
             return new TextDocumentAttributes(uri, "ink");
         }
 
-        public async Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(
+            DidChangeTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didChange' for: '{request.TextDocument.Uri}'");
 
@@ -58,23 +67,27 @@ namespace Ink.LanguageServerProtocol.Handlers
                 _virtualWorkspace.UpdateContentOfTextDocument(request.TextDocument.Uri, change.Text);
             }
 
-            await _diagnosticManager.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.CompileAndDiagnose(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }
 
-        public async Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(
+            DidOpenTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didOpen' for: '{request.TextDocument.Uri}'");
 
             _virtualWorkspace.SetTextDocument(request.TextDocument.Uri, request.TextDocument);
 
-            await _diagnosticManager.Compile(request.TextDocument.Uri);
+            await _diagnosticManager.CompileAndDiagnose(request.TextDocument.Uri, cancellationToken);
 
             return Unit.Value;
         }
 
-        public Task<Unit> Handle(DidCloseTextDocumentParams request, CancellationToken cancellationToken)
+        public Task<Unit> Handle(
+            DidCloseTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didClose' for: '{request.TextDocument.Uri}'");
 
@@ -84,7 +97,9 @@ namespace Ink.LanguageServerProtocol.Handlers
             return Unit.Task;
         }
 
-        public Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
+        public Task<Unit> Handle(
+            DidSaveTextDocumentParams request,
+            CancellationToken cancellationToken)
         {
             _logger.LogDebug($"Received 'textDocument/didSave' for: '{request.TextDocument.Uri}'");
 

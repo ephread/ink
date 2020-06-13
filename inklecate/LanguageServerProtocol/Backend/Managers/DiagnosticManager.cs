@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Ink.LanguageServerProtocol.Backend.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Ink.LanguageServerProtocol.Backend
 {
-    // Compile or run static analysis, then push diagnostics back to the client.
     public class DiagnosticManager: IDiagnosticManager
     {
         private readonly ILogger<DiagnosticManager> _logger;
@@ -20,14 +20,16 @@ namespace Ink.LanguageServerProtocol.Backend
             IDiagnosticianFactory diagnosticianFactory)
         {
             _logger = logger;
-
             _diagnosticianFactory = diagnosticianFactory;
         }
 
-        public async Task Compile(Uri documentUri)
+        public async Task CompileAndDiagnose(Uri documentUri, CancellationToken cancellationToken)
         {
+            _logger.LogDebug($"Creating new Diagnostician for: '{documentUri}'");
             _currentDiagnostician = _diagnosticianFactory.CreateDiagnostician(documentUri);
-            previousFilesWithErrors = await _currentDiagnostician.CompileAndDiagnose(previousFilesWithErrors);
+            previousFilesWithErrors = await _currentDiagnostician.CompileAndDiagnose(
+                previousFilesWithErrors,
+                cancellationToken);
         }
     }
 }

@@ -13,14 +13,10 @@ namespace Ink.LanguageServerProtocol.Backend
     public class HoverResolver: IHoverResolver
     {
         private readonly ISymbolResolver _symbolResolver;
-        private readonly IWorkspaceFileHandler _fileHandler;
 
-        public HoverResolver(
-            ISymbolResolver symbolResolver,
-            IWorkspaceFileHandler fileHandler)
+        public HoverResolver(ISymbolResolver symbolResolver)
         {
             _symbolResolver = symbolResolver;
-            _fileHandler = fileHandler;
         }
 
         public Hover HoverForSymbolAt(Position position, Uri file, CancellationToken cancellationToken)
@@ -47,11 +43,11 @@ namespace Ink.LanguageServerProtocol.Backend
                         case "TURNS_SINCE":
                             return HoverFromMessage("`TURNS_SINCE` returns the number of moves (formally, player inputs) since a particular knot/stitch was last visited.");
                         case "RANDOM":
-                            return HoverFromMessage("`RANDOM(min, max)` Ink can generate random integers if required using the `RANDOM` function. `RANDOM` is authored to be like a dice, so the min and max values are both inclusive.");
+                            return HoverFromMessage("`RANDOM(min, max)` generates random integers. `RANDOM` is authored to be like a dice, so the min and max values are both inclusive.");
                         case "SEED_RANDOM":
                             return HoverFromMessage("`SEED_RANDOM` seeds the random number generator manually. For testing purposes, it's often useful to fix the random number generator so ink will produce the same outcomes every time you play. You can do this by _seeding_ the random number system.");
                         case "READ_COUNT":
-                            return HoverFromMessage("`CHOICE_COUNT` returns the number of options created so far in the current chunk.");
+                            return HoverFromMessage("`READ_COUNT` returns the number of time a knot/stitch was entered.");
                         case "LIST_VALUE":
                             return HoverFromMessage("`LIST_VALUE` returns the numerical value associated with the list. Note the first value in a list has the value 1, and not the value 0.");
                         case "LIST_RANDOM":
