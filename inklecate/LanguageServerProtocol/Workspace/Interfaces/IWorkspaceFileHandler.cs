@@ -37,7 +37,7 @@ namespace Ink.LanguageServerProtocol.Workspace.Interfaces
         /// Note: the main document is also used to store compilation results.
         /// </summary>
         /// <returns></returns>
-        Task<Uri> GetMainDocument();
+        Task<Uri> ResolveMainDocument();
 
         /// <summary>
         /// Resolve a Uri from an include name. "Include names" are sent

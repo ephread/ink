@@ -50,7 +50,7 @@ namespace Ink.LanguageServerProtocol.Backend
             CancellationToken cancellationToken)
         {
             _logger.LogDebug("Retrieving main document URI…");
-            var mainDocumentUri = await _fileHandler.GetMainDocument();
+            var mainDocumentUri = await _fileHandler.ResolveMainDocument();
 
             _logger.LogDebug($"Retrieved. Uri is: '{mainDocumentUri}'");
             var inputString = _fileHandler.LoadDocumentContent(mainDocumentUri);

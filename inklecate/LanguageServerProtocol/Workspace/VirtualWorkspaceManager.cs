@@ -41,9 +41,7 @@ namespace Ink.LanguageServerProtocol.Workspace
             uri = UriHelper.FromClientUri(uri);
             _logger.LogDebug($"Retrieving document at key: '{uri}'");
 
-            _documents.TryGetValue(uri, out TextDocumentItem documentItem);
-
-            return documentItem;
+            return _documents.GetValueOrDefault(uri);
         }
 
         public void SetTextDocument(Uri uri, TextDocumentItem document)

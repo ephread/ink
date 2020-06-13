@@ -85,7 +85,7 @@ namespace Ink.LanguageServerProtocol.Backend
 
         public async Task RetrieveMainDocument()
         {
-            _mainDocumentUri = await _fileHandler.GetMainDocument();
+            _mainDocumentUri = await _fileHandler.ResolveMainDocument();
         }
     }
 }

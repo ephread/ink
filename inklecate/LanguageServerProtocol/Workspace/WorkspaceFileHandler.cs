@@ -84,7 +84,7 @@ namespace Ink.LanguageServerProtocol
             }
         }
 
-        public async Task<Uri> GetMainDocument()
+        public async Task<Uri> ResolveMainDocument()
         {
             var configurationParams = new ConfigurationParams() {
                 Items = new Container<ConfigurationItem>(new ConfigurationItem() {
