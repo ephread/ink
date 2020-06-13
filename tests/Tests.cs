@@ -17,7 +17,7 @@ namespace Tests
 
     [TestFixture(TestMode.Normal)]
     [TestFixture(TestMode.JsonRoundTrip)]
-    public class Tests : IFileHandler
+    public class Tests
     {
         
         private TestMode _mode;
@@ -31,18 +31,6 @@ namespace Tests
         public Tests (TestMode mode)
         {
             _mode = mode;
-        }
-
-        public string ResolveInkFilename (string includeName)
-        {
-            var workingDir = Directory.GetCurrentDirectory ();
-            var fullRootInkPath = System.IO.Path.Combine (workingDir, includeName);
-            return fullRootInkPath;
-        }
-
-        public string LoadInkFileContents (string fullFilename)
-        {
-            return File.ReadAllText (fullFilename);
         }
 
         [Test()]
@@ -296,7 +284,6 @@ Shuffle once: {f_shuffle_once()} {f_shuffle_once()} {f_shuffle_once()} {f_shuffl
             story.ChooseChoiceIndex(0);
 
             Assert.AreEqual("choice", story.Continue());
-            Assert.IsFalse(story.hasError);
         }
 
         [Test()]
@@ -740,8 +727,6 @@ VAR x = 3
                 ");
 
         	story.Continue ();
-
-        	Assert.IsFalse (story.hasError);
         }
 
         [Test()]
@@ -805,7 +790,6 @@ world
 
             story = CompileString("== test ==\nContent\n-> END");
             story.ContinueMaximally();
-            Assert.IsFalse(story.hasError);
 
             // Should have runtime error due to running out of content
             // (needs a -> END)
@@ -873,6 +857,49 @@ EXTERNAL times(i,str)
             Assert.AreEqual("knock knock knock\n", story.Continue());
 
             Assert.AreEqual("MESSAGE: hello world", message);
+        }
+
+        [Test()]
+        public void TestLookupSafeOrNot()
+        {
+            var story = CompileString(@"
+EXTERNAL myAction()
+
+One
+~ myAction()
+Two
+");
+
+            // Lookahead SAFE - should get multiple calls to the ext function,
+            // one for lookahead on first line, one "for real" on second line.
+            int callCount = 0;
+            story.BindExternalFunction("myAction", () => callCount++, lookaheadSafe:true);
+
+            story.ContinueMaximally();
+            Assert.AreEqual(2, callCount);
+
+            // Lookahead UNSAFE - when it sees the function, it should break out early
+            // and stop lookahead, making sure that the action is only called for the second line.
+            callCount = 0;
+            story.ResetState();
+            story.UnbindExternalFunction("myAction");
+            story.BindExternalFunction("myAction", () => callCount++, lookaheadSafe:false);
+
+            story.ContinueMaximally();
+            Assert.AreEqual(1, callCount);
+
+            // Lookahead SAFE but breaks glue intentionally
+            var storyWithPostGlue = CompileString(@"
+EXTERNAL myAction()
+
+One 
+~ myAction()
+<> Two
+");
+
+            storyWithPostGlue.BindExternalFunction("myAction", () => {});
+            var result = storyWithPostGlue.ContinueMaximally();
+            Assert.AreEqual("One\nTwo\n", result);
         }
 
         [Test()]
@@ -1234,7 +1261,6 @@ Loose end when there's no weave
             story.ChooseChoiceIndex(1);
             Assert.AreEqual("wigwag\n", story.Continue());
             Assert.AreEqual("THE END\n", story.Continue());
-            Assert.IsFalse(story.hasError);
         }
 
         [Test()]
@@ -1265,7 +1291,6 @@ Loose end when there's no weave
 
             story.ChooseChoiceIndex(0);
             Assert.AreEqual("I’m an option\nFinishing thread.\n", story.ContinueMaximally());
-            Assert.IsFalse(story.hasError);
         }
 
         [Test()]
@@ -1357,7 +1382,6 @@ This is place 2.
 
             story.ChooseChoiceIndex(0);
             Assert.AreEqual("choice in place 1\nThe end\n", story.ContinueMaximally());
-            Assert.IsFalse(story.hasError);
         }
 
         [Test()]
@@ -1735,6 +1759,7 @@ as fast as we could.
 * opt
     - - text
     * * {false} impossible
+    * * -> END
 - gather");
 
             story.ContinueMaximally();
@@ -2171,7 +2196,7 @@ VAR x = 5
             Assert.AreEqual(null, story.variablesState["z"]);
 
             // Not allowed arbitrary types
-            Assert.Throws<StoryException>(() =>
+            Assert.Throws<Exception>(() =>
             {
                 story.variablesState["x"] = new System.Text.StringBuilder();
             });
@@ -3345,11 +3370,11 @@ Phrase 1
 ~temp x = 5
 hello
                 ";
-        	var story = CompileString (storyStr);
+        	var story = CompileString (storyStr, testingErrors:true);
 
         	Assert.AreEqual ("0\nhello\n", story.ContinueMaximally ());
 
-        	Assert.IsTrue (story.hasWarning);
+        	Assert.IsTrue (HadWarning());
         }
 
 
@@ -3766,19 +3791,25 @@ Text.
             _warningMessages.Clear();
             _authorMessages.Clear ();
 
-            InkParser parser = new InkParser(str, null, TestErrorHandler, this);
+            InkParser parser = new InkParser(str, null, OnError);
             var parsedStory = parser.Parse();
             parsedStory.countAllVisits = countAllVisits;
 
-            Story story = parsedStory.ExportRuntime(TestErrorHandler);
-            if( !testingErrors )
+            Story story = parsedStory.ExportRuntime(OnError);
+            if ( !testingErrors )
                 Assert.AreNotEqual(null, story);
 
-            // Convert to json and back again
-            if (_mode == TestMode.JsonRoundTrip && story != null)
+            if (story != null)
             {
-                var jsonStr = story.ToJson();
-                story = new Story(jsonStr);
+                story.onError += OnError;
+
+                // Convert to json and back again
+                if (_mode == TestMode.JsonRoundTrip)
+                {
+                    var jsonStr = story.ToJson();
+                    story = new Story(jsonStr);
+                    story.onError += OnError;
+                }
             }
 
             return story;
@@ -3791,16 +3822,15 @@ Text.
             _warningMessages.Clear();
             _authorMessages.Clear ();
 
-            InkParser parser = new InkParser(str, null, TestErrorHandler);
+            InkParser parser = new InkParser(str, null, OnError);
             var parsedStory = parser.Parse();
 
             if (!testingErrors) {
                 Assert.IsNotNull (parsedStory);
-                Assert.IsFalse (parsedStory.hadError);
             }
 
-            if (parsedStory && !parsedStory.hadError && _errorMessages.Count == 0) {
-                parsedStory.ExportRuntime (TestErrorHandler);
+            if (parsedStory && _errorMessages.Count == 0) {
+                parsedStory.ExportRuntime (OnError);
             }
 
             return parsedStory;
@@ -3829,7 +3859,7 @@ Text.
             return HadErrorOrWarning(matchStr, _warningMessages);
         }
 
-        private void TestErrorHandler(string message, ErrorType errorType)
+        private void OnError(string message, ErrorType errorType)
         {
             if (_testingErrors)
             {
@@ -3882,10 +3912,9 @@ CONST a{0} = ""World""
 CONST b{0} = 3
 ", identifier);
 
-                var compiledStory = CompileStringWithoutRuntime(storyStr, testingErrors: false);
+                var compiledStory = CompileStringWithoutRuntime(storyStr);
 
                 Assert.IsNotNull(compiledStory);
-                Assert.IsFalse(compiledStory.hadError);
             }
         }
         [Test()]
@@ -3905,10 +3934,9 @@ CONST {0}a = ""World""
 CONST {0}b = 3
 ", identifier);
 
-                var compiledStory = CompileStringWithoutRuntime(storyStr, testingErrors: false);
+                var compiledStory = CompileStringWithoutRuntime(storyStr);
 
                 Assert.IsNotNull(compiledStory);
-                Assert.IsFalse(compiledStory.hadError);
             }
         }
 
@@ -3929,10 +3957,9 @@ VAR a{0} = ""World""
 VAR b{0} = 3
 ", identifier);
 
-                var compiledStory = CompileStringWithoutRuntime(storyStr, testingErrors: false);
+                var compiledStory = CompileStringWithoutRuntime(storyStr);
 
                 Assert.IsNotNull(compiledStory);
-                Assert.IsFalse(compiledStory.hadError);
             }
         }
 
@@ -3953,10 +3980,9 @@ VAR {0}a = ""World""
 VAR {0}b = 3
 ", identifier);
 
-                var compiledStory = CompileStringWithoutRuntime(storyStr, testingErrors: false);
+                var compiledStory = CompileStringWithoutRuntime(storyStr);
 
                 Assert.IsNotNull(compiledStory);
-                Assert.IsFalse(compiledStory.hadError);
             }
         }
 
@@ -3978,10 +4004,9 @@ VAR z{0} = -> divert{0}
 -> END
 ", rangeString);
                 
-                var compiledStory = CompileStringWithoutRuntime (storyStr, testingErrors:false);
+                var compiledStory = CompileStringWithoutRuntime (storyStr);
 
                 Assert.IsNotNull (compiledStory);
-                Assert.IsFalse (compiledStory.hadError);
             }
         }
         [Test()]
@@ -4002,10 +4027,9 @@ VAR {0}z = -> {0}divert
 -> END
 ", rangeString);
 
-                var compiledStory = CompileStringWithoutRuntime(storyStr, testingErrors: false);
+                var compiledStory = CompileStringWithoutRuntime(storyStr);
 
                 Assert.IsNotNull(compiledStory);
-                Assert.IsFalse(compiledStory.hadError);
             }
         }
 
