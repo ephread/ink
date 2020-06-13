@@ -83,17 +83,17 @@ namespace Ink.LanguageServerProtocol.Backend
                     PublishStatisticsToClient(_workspace.Uri, mainDocumentUri, stats);
                 }
 
-                _workspace.SetCompilationResult(mainDocumentUri, new CompilationResult() {
-                    Story = compiler.parsedStory,
-                    Stats = stats
-                });
-
                 if (cancellationToken.IsCancellationRequested) return _errors.Keys.ToList();
 
                 using (_logger.TimeDebug("Code Generation"))
                 {
                     compiler.Generate();
                 }
+
+                _workspace.SetCompilationResult(mainDocumentUri, new CompilationResult() {
+                    Story = compiler.parsedStory,
+                    Stats = stats
+                });
             }
 
             PublishDiagnosticsToClient();
