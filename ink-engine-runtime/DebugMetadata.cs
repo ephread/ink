@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ink.Runtime
 {
@@ -15,6 +15,9 @@ namespace Ink.Runtime
         {
         }
 
+        // Currently only used in VariableReference in order to
+        // merge the debug metadata of a Path.Of.Indentifiers into
+        // one single range.
         public DebugMetadata Merge(DebugMetadata dm)
         {
             var newDebugMetadata = new DebugMetadata();

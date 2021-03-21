@@ -1,4 +1,4 @@
-﻿
+
 namespace Ink
 {
 	public class StringParserState
@@ -14,9 +14,9 @@ namespace Ink
 		}
 
         public int characterInLineIndex {
-			get { return currentElement.characterInLineIndex; }
-			set { currentElement.characterInLineIndex = value; }
-		}
+            get { return currentElement.characterInLineIndex; }
+            set { currentElement.characterInLineIndex = value; }
+        }
 
         public uint customFlags {
             get { return currentElement.customFlags; }

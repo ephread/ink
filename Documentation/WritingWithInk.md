@@ -417,7 +417,7 @@ Include statements should always go at the top of a file, and not inside knots.
 There are no rules about what file a knot must be in to be diverted to. (In other words, separating files has no effect on the game's namespacing).
 
 
-## 5) Varying Choices 
+## 7) Varying Choices 
 
 ### Choices can only be used once
 
@@ -510,7 +510,7 @@ The 'once-only' behaviour is not always what we want, of course, so we have a se
 			You struggle up off the couch to go and compose epic poetry.
 			-> END
 	
-Default choices can be sticky too.
+Fallback choices can be sticky too.
 
 	=== conversation_loop 
 		*	[Talk about the weather] -> chat_weather 
@@ -568,7 +568,7 @@ If it's non-zero, it'll return true in a test like the one above, but you can al
 **ink** supports a lot more logic and conditionality than covered here - see the section on 'variables and logic'.
 
 
-## 6) Variable Text
+## 8) Variable Text
 
 ### Text can vary
 
@@ -646,8 +646,10 @@ Here's a one-knot version of whack-a-mole. Note we use once-only options, and a 
 		*  [{&Blast|Hammer} middle] -> whack_a_mole
 		*  [{&Clobber|Bosh} bottom-left] 	-> whack_a_mole
 		*  [{&Nail|Thump} bottom-right] 	-> whack_a_mole
-		*  [] Then you collapse from hunger. The mole has defeated you! 
-			-> END
+		*   ->
+        	    Then you collapse from hunger. The mole has defeated you! 
+	            -> END
+
 
 produces the following 'game':
 
@@ -729,7 +731,7 @@ or:
 
 	"I missed him. Was he particularly evil?"
 
-## 7) Game Queries and Functions
+## 9) Game Queries and Functions
 
 **ink** provides a few useful 'game level' queries about game state, for use in conditional logic. They're not quite parts of the language, but they're always available, and they can't be edited by the author. In a sense, they're the "standard library functions" of the language.
 
@@ -2249,7 +2251,8 @@ But what if we add a microwave as well? We might want start generalising our fun
 	*	{kettleState == cold} [Turn on kettle] 
 		{boilSomething(kettleState, "kettle")}
 	*	{potState == cold} [Light stove] 
-		{boilSomething(potState, "pot")}		*	{microwaveState == cold} [Turn on microwave] 
+		{boilSomething(potState, "pot")}		
+	*	{microwaveState == cold} [Turn on microwave] 
 		{boilSomething(microwaveState, "microwave")}
 
 or even... 
@@ -2666,7 +2669,7 @@ To demonstrate a few of these ideas, here's a functional Tower of Hanoi example,
 	=== gameloop 
 	    Staring down from the heavens you see your followers finishing construction of the last of the great temples, ready to begin the work.
 	- (top) 
-	    +  (describe) {true || TURNS_SINCE(-> describe) >= 2 || !describe} [ Regard the temples]
+	    +  [ Regard the temples]
 	        You regard each of the temples in turn. On each is stacked the rings of stone. {describe_pillar(1)} {describe_pillar(2)} {describe_pillar(3)}
 	    <- move_post(1, 2, post1, post2)   
 	    <- move_post(2, 1, post2, post1)  
@@ -3294,7 +3297,11 @@ Below is a listing of the currently supported identifier ranges.
 
  - **Latin Extended B**
  
-   Enables an extended character range subset of the Latin alphabet - completely represented by the official *Latin Extended-B* unicode range `\u0180`-`\u024F`.  
+   Enables an extended character range subset of the Latin alphabet - completely represented by the official *Latin Extended-B* unicode range `\u0180`-`\u024F`.
+
+- **Latin 1 Supplement**
+ 
+   Enables an extended character range subset of the Latin alphabet - completely represented by the official *Latin 1 Supplement* unicode range `\u0080` - `\u00FF`.  
 
 
 **NOTE!** ink files should be saved in UTF-8 format, which ensures that the above character ranges are supported.

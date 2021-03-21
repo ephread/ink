@@ -1,23 +1,23 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace Ink
 {
-	public partial class InkParser : StringParser
-	{
+    public partial class InkParser : StringParser
+    {
         public InkParser(string str, string filenameForMetadata = null, Ink.ErrorHandler externalErrorHandler = null, IFileHandler fileHandler = null)
             : this(str, filenameForMetadata, externalErrorHandler, null, fileHandler)
         {  }
 
         InkParser(string str, string inkFilename = null, Ink.ErrorHandler externalErrorHandler = null, InkParser rootParser = null, IFileHandler fileHandler = null) : base(str) {
             _filename = inkFilename;
-			RegisterExpressionOperators ();
+            RegisterExpressionOperators ();
             GenerateStatementLevelRules ();
 
             // Built in handler for all standard parse errors and warnings
             this.errorHandler = OnStringParserError;
-            
+
             // The above parse errors are then formatted as strings and passed
             // to the Ink.ErrorHandler, or it throws an exception
             _externalErrorHandler = externalErrorHandler;
@@ -38,7 +38,7 @@ namespace Ink
                 _rootParser = rootParser;
             }
 
-		}
+        }
 
         // Main entry point
         public Parsed.Story Parse()
@@ -166,6 +166,6 @@ namespace Ink
         Ink.ErrorHandler _externalErrorHandler;
 
         string _filename;
-	}
+    }
 }
 

@@ -1319,7 +1319,7 @@ VAR negativeLiteral3 = !(0)
 {negativeLiteral2}
 {negativeLiteral3}
 ");
-            Assert.AreEqual("-1\n0\n1\n", story.ContinueMaximally());
+            Assert.AreEqual("-1\nfalse\ntrue\n", story.ContinueMaximally());
         }
 
         [Test()]
@@ -2816,7 +2816,7 @@ LIST list = a, (b), c, (d), e
 ";
             var story = CompileString (storyStr);
 
-            Assert.AreEqual ("b, d\na, b, c, e\nb, c\n0\n1\n1\n", story.ContinueMaximally ());
+            Assert.AreEqual ("b, d\na, b, c, e\nb, c\nfalse\ntrue\ntrue\n", story.ContinueMaximally ());
         }
 
 
@@ -3195,7 +3195,7 @@ VAR x = ->place
 
         	var result = story.ContinueMaximally ();
 
-        	Assert.AreEqual ("1\n0\n1\n1\n", result);
+        	Assert.AreEqual ("true\nfalse\ntrue\ntrue\n", result);
         }
 
         [Test ()]
@@ -3781,6 +3781,160 @@ Text.
 
             Assert.AreEqual("Text.\n", story.Continue());
             Assert.AreEqual("5\n", story.Continue());
+        }
+
+        // Bools used to be represented purely
+        // using ints. However as of September 2020
+        // we decided to add "proper" bools but with the
+        // original semantics that made the int-based bools
+        // useful - i.e. the ability to easily upgrade
+        // a simple bool flag to a counter. Therefore we
+        // get the slightly nausia-inducing "true + 1 == 2",
+        // "1 == true", etc. It's for the best though, I promise!
+        [Test()]
+        public void TestBools()
+        {
+            Assert.AreEqual("true\n", CompileString("{true}").Continue());
+            Assert.AreEqual("2\n", CompileString("{true + 1}").Continue());
+            Assert.AreEqual("3\n", CompileString("{2 + true}").Continue());
+            Assert.AreEqual("0\n", CompileString("{false + false}").Continue());
+            Assert.AreEqual("2\n", CompileString("{true + true}").Continue());
+            Assert.AreEqual("true\n", CompileString("{true == 1}").Continue());
+            Assert.AreEqual("false\n", CompileString("{not 1}").Continue());
+            Assert.AreEqual("false\n", CompileString("{not true}").Continue());
+            Assert.AreEqual("true\n", CompileString("{3 > 1}").Continue());
+
+            var listHasntStory = @"
+                LIST list = a, (b), c, (d), e
+                {list !? (c)}
+            ";
+            Assert.AreEqual("true\n", CompileString(listHasntStory).Continue());
+        }
+
+
+        [Test()]
+        public void TestMultiFlowBasics()
+        {
+            var storyStr =
+        @"
+=== knot1
+knot 1 line 1
+knot 1 line 2
+-> END 
+
+=== knot2
+knot 2 line 1
+knot 2 line 2
+-> END 
+";
+
+            var story = CompileString(storyStr);
+
+            story.SwitchFlow("First");
+            story.ChoosePathString("knot1");
+            Assert.AreEqual("knot 1 line 1\n", story.Continue());
+
+            story.SwitchFlow("Second");
+            story.ChoosePathString("knot2");
+            Assert.AreEqual("knot 2 line 1\n", story.Continue());
+
+            story.SwitchFlow("First");
+            Assert.AreEqual("knot 1 line 2\n", story.Continue());
+
+            story.SwitchFlow("Second");
+            Assert.AreEqual("knot 2 line 2\n", story.Continue());
+        }
+
+        [Test()]
+        public void TestMultiFlowSaveLoadThreads()
+        {
+            var storyStr =
+        @"
+Default line 1
+Default line 2
+
+== red ==
+Hello I'm red
+<- thread1(""red"")
+<- thread2(""red"")
+-> DONE
+
+== blue ==
+Hello I'm blue
+<- thread1(""blue"")
+<- thread2(""blue"")
+-> DONE
+
+== thread1(name) ==
++ Thread 1 {name} choice
+    -> thread1Choice(name)
+
+== thread2(name) ==
++ Thread 2 {name} choice
+    -> thread2Choice(name)
+
+== thread1Choice(name) ==
+After thread 1 choice ({name})
+-> END
+
+== thread2Choice(name) ==
+After thread 2 choice ({name})
+-> END
+";
+
+            var story = CompileString(storyStr);
+            
+            // Default flow
+            Assert.AreEqual("Default line 1\n", story.Continue());
+
+            story.SwitchFlow("Blue Flow");
+            story.ChoosePathString("blue");
+            Assert.AreEqual("Hello I'm blue\n", story.Continue());
+
+            story.SwitchFlow("Red Flow");
+            story.ChoosePathString("red");
+            Assert.AreEqual("Hello I'm red\n", story.Continue());
+
+            // Test existing state remains after switch (blue)
+            story.SwitchFlow("Blue Flow");
+            Assert.AreEqual("Hello I'm blue\n", story.currentText);
+            Assert.AreEqual("Thread 1 blue choice", story.currentChoices[0].text);
+
+            // Test existing state remains after switch (red)
+            story.SwitchFlow("Red Flow");
+            Assert.AreEqual("Hello I'm red\n", story.currentText);
+            Assert.AreEqual("Thread 1 red choice", story.currentChoices[0].text);
+
+            // Save/load test
+            var saved = story.state.ToJson();
+            
+            // Test choice before reloading state before resetting
+            story.ChooseChoiceIndex(0);
+            Assert.AreEqual("Thread 1 red choice\nAfter thread 1 choice (red)\n", story.ContinueMaximally());
+            story.ResetState();
+
+            // Load to pre-choice: still red, choose second choice
+            story.state.LoadJson(saved);
+
+            story.ChooseChoiceIndex(1);
+            Assert.AreEqual("Thread 2 red choice\nAfter thread 2 choice (red)\n", story.ContinueMaximally());
+
+            
+            // Load: switch to blue, choose 1
+            story.state.LoadJson(saved);
+            story.SwitchFlow("Blue Flow");
+            story.ChooseChoiceIndex(0);
+            Assert.AreEqual("Thread 1 blue choice\nAfter thread 1 choice (blue)\n", story.ContinueMaximally());
+
+            // Load: switch to blue, choose 2
+            story.state.LoadJson(saved);
+            story.SwitchFlow("Blue Flow");
+            story.ChooseChoiceIndex(1);
+            Assert.AreEqual("Thread 2 blue choice\nAfter thread 2 choice (blue)\n", story.ContinueMaximally());
+
+            // Remove active blue flow, should revert back to global flow
+            story.RemoveFlow("Blue Flow");
+            Assert.AreEqual("Default line 2\n", story.Continue());
         }
 
         // Helper compile function
