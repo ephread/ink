@@ -60,7 +60,7 @@ namespace Ink.LanguageServerProtocol.Backend
                 // We treat each component of the Path separately
                 // (knot.stitch.label), so that we can point to the
                 // appropriate definition.
-                var components = divert.target.identifiableComponents;
+                var components = divert.target.components;
                 for (int i = 0; i < components.Count; i++)
                 {
                     var pathIdentifier = components[i];
